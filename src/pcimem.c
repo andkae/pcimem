@@ -22,6 +22,9 @@
  *
  */
 
+
+
+/** Standard libs **/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -35,6 +38,12 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
+
+/** User Libs **/
+#include "../inc/bus/pci/pciinfo/pciinfo.h"
+
+
+/** Macros **/
 #define PRINT_ERROR \
 	do { \
 		fprintf(stderr, "Error at line %d, file %s (%d) [%s]\n", \
@@ -43,85 +52,6 @@
 
 #define MAP_SIZE 4096UL
 #define MAP_MASK (MAP_SIZE - 1)
-
-
-
-
-/** 
- *  pcimemFind
- * 	----------
- */
-int pcimemFind(char vendorID[], char deviceID[], char bar[], char devicePath[], uint32_t devicePathMax)
-{
-	/** used variables **/
-	char 		cmd[256]; 					// command buffer
-	char		devPath[256];				// path buffer
-	char 		line[1024], line2[1024];	// read buffer
-	uint32_t	uint32DevPathIdx;			// match with buf
-	uint8_t		uint8FoundDevice;			// device found
-	FILE 		*foundVendor;				// system call answer
-	FILE		*foundDevice;
-
-	
-	/* search in system path for pci devices*/
-	strcpy(cmd, "grep -irnw /sys/bus/pci/devices/*/vendor -e ");
-	strcat(cmd, vendorID);
-	foundVendor = popen(cmd, "r");
-	
-	/* process found device list for device ID */
-	uint8FoundDevice  = 0;
-	while(fscanf(foundVendor, "%s", line) != EOF) {	
-		/* 	extract device path for given vendor id
-		 * 	before: /sys/bus/pci/devices/0000:03:0d.0/vendor:1:0x110a
-		 * 	after:	/sys/bus/pci/devices/0000:03:0d.0
-		 */
-		if (strstr(line, "/vendor")-line < (int)(sizeof(devPath)/sizeof(devPath[0]))) {
-			uint32DevPathIdx = strstr(line, "/vendor")-line;
-		} else {
-			uint32DevPathIdx = 0;
-		}
-		strncpy(devPath, line, uint32DevPathIdx);
-		devPath[uint32DevPathIdx] = '\0';		// termination character
-		
-		/*	build command for device id look up
-		 * 	cat /sys/bus/pci/devices/0000:03:0d.0/device
-		*/
-		strcpy(cmd, "cat ");
-		strcat(cmd, devPath);
-		strcat(cmd, "/device");
-		foundDevice = popen(cmd, "r");
-		
-		/* process system call response */
-		fscanf(foundDevice, "%s", line2);	// read only first line
-		if (strcmp(line2, deviceID) == 0) {
-			++uint8FoundDevice;				// increment match counter
-		}
-		
-		/* close opened pipe */
-		pclose(foundDevice);
-	}
-
-	/* 	build path to bar
-	 * 	before: /sys/bus/pci/devices/0000:03:0d.0/
-	 * 	after:	/sys/bus/pci/devices/0000:03:0d.0/resource<bar>
-	 */
-	strcat(devPath, "/resource");
-	strcat(devPath, bar);
-	
-	/* release path */
-	if (uint8FoundDevice == 1) {
-		strncpy(devicePath, devPath, devicePathMax);
-	} else {
-		devicePath[0] = '\0';
-	}
-	
-	/* close opened pipe */
-	pclose(foundVendor);
-
-	/* finish function */
-	return uint8FoundDevice-1;
-}
-
 
 
 /** 
@@ -164,8 +94,15 @@ int main(int argc, char **argv) {
 	target 		= strtoul(argv[4], 0, 0);
 
 	/* find pci device */
-	if (pcimemFind(vendorID, deviceID, bar, filename, sizeof(filename)/sizeof(filename[0])) != 0) PRINT_ERROR;
-
+	if (pciinfoFind(vendorID, deviceID, filename, sizeof(filename)/sizeof(filename[0])) != 0) PRINT_ERROR;
+	
+	/* 	build path to bar
+	 * 	before: /sys/bus/pci/devices/0000:03:0d.0/
+	 * 	after:	/sys/bus/pci/devices/0000:03:0d.0/resource<bar>
+	 */
+	strcat(devPath, "/resource");
+	strcat(devPath, bar);	
+	
 	/* check more arguments */
 	if(argc > 6)
 		access_type = tolower(argv[5][0]);

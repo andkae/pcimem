@@ -27,11 +27,16 @@ CFLAGS=-c -Wall -Wextra
 all: pcimem
 
 
-sinu828FPGAprog: pcimem.o
+pcimem: pcimem.o pciinfo.o
 
 
 pcimem.o: ./src/pcimem.c
 	$(CC) $(CFLAGS) ./src/pcimem.c
+	
+	
+pciinfo.o: ./inc/bus/pci/pciinfo/pciinfo.c
+	$(CC) $(CFLAGS) ./inc/bus/pci/pciinfo/pciinfo.c
 
+	
 clean:
 	rm *o pcimem

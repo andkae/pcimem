@@ -100,8 +100,8 @@ int main(int argc, char **argv) {
 	 * 	before: /sys/bus/pci/devices/0000:03:0d.0/
 	 * 	after:	/sys/bus/pci/devices/0000:03:0d.0/resource<bar>
 	 */
-	strcat(devPath, "/resource");
-	strcat(devPath, bar);	
+	strcat(filename, "/resource");
+	strcat(filename, bar);	
 	
 	/* check more arguments */
 	if(argc > 6)

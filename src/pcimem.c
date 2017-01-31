@@ -172,6 +172,7 @@ int main(int argc, char **argv) {
 	/* unmap PCI handle */
 	if(munmap(map_base, MAP_SIZE) == -1) {
 		printf("ERROR: Unmapping PCI device\n");
+		exit(EXIT_FAILURE);
 	}
 	
 	/* close PCI bar file handle */

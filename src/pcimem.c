@@ -138,7 +138,11 @@ int main(int argc, char **argv) {
 			printf("ERROR: Illegal data type '%c'.\n", access_type);
 			exit(EXIT_FAILURE);
 	}
-    printf("Value at offset 0x%X (%p): 0x%X\n", (int) target, virt_addr, read_result); fflush(stdout);
+    
+	/* print read value, only in case of read access */
+	if (argc <= 6) {
+		printf("Value at offset 0x%X (%p): 0x%X\n", (int) target, virt_addr, read_result); fflush(stdout);
+	}
     
 	/* write access */
 	if(argc > 6) {

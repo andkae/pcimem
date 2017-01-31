@@ -43,13 +43,7 @@
 #include "../inc/bus/pci/pciinfo/pciinfo.h"
 
 
-/** Macros **/
-#define PRINT_ERROR \
-	do { \
-		fprintf(stderr, "Error at line %d, file %s (%d) [%s]\n", \
-		__LINE__, __FILE__, errno, strerror(errno)); exit(1); \
-	} while(0)
-
+/** Precompiler directives **/
 #define MAP_SIZE 4096UL
 #define MAP_MASK (MAP_SIZE - 1)
 
@@ -64,13 +58,16 @@ int main(int argc, char **argv) {
 	uint32_t read_result, writeval;
 	char *vendorID, *deviceID, *bar;
 	char filename[1024];
+	char charWriteVal[12];
+	char charReadVal[12];
+	
 	off_t target;
 	int access_type = 'w';
 
 
 	/* check for root rights */
 	if (getuid()) {
-		printf("ERROR: root rights required! Try sudo.\n");
+		printf("ERROR: root rights required! Try 'sudo ./%s'\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 
@@ -88,13 +85,18 @@ int main(int argc, char **argv) {
 			argv[0]);
 		exit(1);
 	}
+	
+	/* assign command line arguments to variables */
 	vendorID 	= argv[1];
 	deviceID 	= argv[2];
 	bar			= argv[3];
 	target 		= strtoul(argv[4], 0, 0);
 
 	/* find pci device */
-	if (pciinfoFind(vendorID, deviceID, filename, sizeof(filename)/sizeof(filename[0])) != 0) PRINT_ERROR;
+	if (pciinfoFind(vendorID, deviceID, filename, sizeof(filename)/sizeof(filename[0])) != 0) {
+		printf("ERROR: Find PCI Device with VendorID=%s and DeviceID=%s\n", vendorID, deviceID);
+		exit(EXIT_FAILURE);
+	}
 	
 	/* 	build path to bar
 	 * 	before: /sys/bus/pci/devices/0000:03:0d.0/
@@ -108,18 +110,19 @@ int main(int argc, char **argv) {
 		access_type = tolower(argv[5][0]);
 		
 	/* open bar handle */
-    if((fd = open(filename, O_RDWR | O_SYNC)) == -1) PRINT_ERROR;
-    printf("%s opened.\n", filename);
-    printf("Target offset is 0x%x, page size is %ld\n", (int) target, sysconf(_SC_PAGE_SIZE));
-    fflush(stdout);
-
+    if((fd = open(filename, O_RDWR | O_SYNC)) == -1) {
+		printf("ERROR: open '%s' failed\n", filename);
+		exit(EXIT_FAILURE);
+    }
+	
     /* Map one page */
-    printf("mmap(%d, %ld, 0x%x, 0x%x, %d, 0x%x)\n", 0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (int) target);
     map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, target & ~MAP_MASK);
-    if(map_base == (void *) -1) PRINT_ERROR;
-    printf("PCI Memory mapped to address 0x%08lx.\n", (unsigned long) map_base);
-    fflush(stdout);
+    if(map_base == (void *) -1) {
+		printf("ERROR: mmap(%d, %ld, 0x%x, 0x%x, %d, 0x%x)\n", 0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (int) target);
+		exit(EXIT_FAILURE);
+	}
 
+	/* read access */
     virt_addr = map_base + (target & MAP_MASK);
     switch(access_type) {
 		case 'b':
@@ -132,12 +135,12 @@ int main(int argc, char **argv) {
 			read_result = *((uint32_t *) virt_addr);
 			break;
 		default:
-			fprintf(stderr, "Illegal data type '%c'.\n", access_type);
-			exit(2);
+			printf("ERROR: Illegal data type '%c'.\n", access_type);
+			exit(EXIT_FAILURE);
 	}
-    printf("Value at offset 0x%X (%p): 0x%X\n", (int) target, virt_addr, read_result);
-    fflush(stdout);
-
+    printf("Value at offset 0x%X (%p): 0x%X\n", (int) target, virt_addr, read_result); fflush(stdout);
+    
+	/* write access */
 	if(argc > 6) {
 		writeval = strtoul(argv[6], 0, 0);
 		switch(access_type) {
@@ -154,11 +157,22 @@ int main(int argc, char **argv) {
 				read_result = *((uint32_t *) virt_addr);
 				break;
 		}
-		printf("Written 0x%X; readback 0x%X\n", writeval, read_result);
-		fflush(stdout);
+		/* perform Write/Read Compare */
+		sprintf(charWriteVal, "0x%08x", writeval);			// convert write value into hexadecimal string
+		sprintf(charReadVal, "0x%08x", read_result);		// convert to hexadecimal string
+		if (strcmp(charReadVal, charWriteVal) != 0) {
+			printf("WARNING: Written %s; Readback %s\n", charWriteVal, charReadVal); fflush(stdout);
+		}
 	}
 
-	if(munmap(map_base, MAP_SIZE) == -1) PRINT_ERROR;
+	/* unmap PCI handle */
+	if(munmap(map_base, MAP_SIZE) == -1) {
+		printf("ERROR: Unmapping PCI device\n");
+	}
+	
+	/* close PCI bar file handle */
     close(fd);
-    return 0;
+    
+	/* graceful end */
+	exit(EXIT_SUCCESS);
 }

@@ -1,3 +1,22 @@
+/**
+ *	@file		pcimem.c
+ *  @author		Andreas Kaeberlein <andreas.kaeberlein.ext@siemens.com>, Heitec AG
+ *  @date		Feb 3, 2017
+ *  @version	1.0
+ * 
+ *  @brief		simple pci bus access tool
+ * 
+ *  simple pci bus access tool; Original file header below
+ *
+ *  @copyright	(c) All Rights Reserved
+ *  Company		Siemens AG
+ *  Address		Clemens-Winkler-Strasse 3, 09116 Chemnitz
+ *  Telephone	+49 371 4851
+ * 
+ */
+
+
+
 /*
  * pcimem.c: Simple program to read/write from/to a pci device from userspace.
  *

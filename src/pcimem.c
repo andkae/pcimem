@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
     
 	/* print read value, only in case of read access */
 	if (argc <= 6) {
-		printf("Value at offset 0x%X (%p): 0x%X\n", (int) target, virt_addr, read_result); fflush(stdout);
+		printf("OFFSET=0x%X; DATA=0x%X;\n", (int) target, read_result); fflush(stdout);
 	}
     
 	/* write access */
@@ -162,10 +162,10 @@ int main(int argc, char **argv) {
 				break;
 		}
 		/* perform Write/Read Compare */
-		sprintf(charWriteVal, "0x%08x", writeval);			// convert write value into hexadecimal string
-		sprintf(charReadVal, "0x%08x", read_result);		// convert to hexadecimal string
+		sprintf(charWriteVal, "0x%08X", writeval);			// convert write value into hexadecimal string
+		sprintf(charReadVal, "0x%08X", read_result);		// convert to hexadecimal string
 		if (strcmp(charReadVal, charWriteVal) != 0) {
-			printf("WARNING: Written %s; Readback %s\n", charWriteVal, charReadVal); fflush(stdout);
+			printf("WARNING: WRITE=%s; READ=%s;\n", charWriteVal, charReadVal); fflush(stdout);
 		}
 	}
 

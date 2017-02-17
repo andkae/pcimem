@@ -74,7 +74,6 @@
 int main(int argc, char **argv) {
 	int fd;
 	void *map_base, *virt_addr;
-	uint32_t read_result, writeval;
 	char *vendorID, *deviceID, *bar;
 	char filename[1024];
 	char charWriteVal[12];
@@ -94,7 +93,7 @@ int main(int argc, char **argv) {
 	if(argc < 6) {
 		// pcimem	0x110A	0x4080	0 		0x100	w 		0x00
 		// argv[0]  [1]   	[2]     [3] 	[4]   	[5]		[6]
-		fprintf(stderr, "\nUsage:\t%s { vendorID } { deviceID } { bar } { offset } [ type [ data ] ]\n"
+		fprintf(stderr, "\nUsage:\t%s { vendorID } { deviceID } { bar } { offset } { type } [ data ] ]\n"
 			"\tvendorID: vendor identification of PCI device f.e. 0x110A\n"
 			"\tdeviceID: device identification of PCI device f.e. 0x4080\n"
 			"\tbar     : bar of targeted PCI device\n"
@@ -123,10 +122,7 @@ int main(int argc, char **argv) {
 	 */
 	strcat(filename, "/resource");
 	strcat(filename, bar);	
-	
-	/* check more arguments */
-	if(argc > 6)
-		access_type = tolower(argv[5][0]);
+
 		
 	/* open bar handle */
     if((fd = open(filename, O_RDWR | O_SYNC)) == -1) {
@@ -141,52 +137,54 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	/* read access */
-    virt_addr = map_base + (target & MAP_MASK);
-    switch(access_type) {
-		case 'b':
-			read_result = *((uint8_t *) virt_addr);
-			break;
-		case 'h':
-			read_result = *((uint16_t *) virt_addr);
-			break;
-		case 'w':
-			read_result = *((uint32_t *) virt_addr);
-			break;
-		default:
-			printf("ERROR: Illegal data type '%c'.\n", access_type);
-			exit(EXIT_FAILURE);
-	}
-    
-	/* print read value, only in case of read access */
-	if (argc <= 6) {
-		printf("OFFSET=0x%X; DATA=0x%X;\n", (int) target, read_result); fflush(stdout);
-	}
-    
-	/* write access */
-	if(argc > 6) {
-		writeval = strtoul(argv[6], 0, 0);
+	/* prepare for PCI memory access */
+	virt_addr	= map_base + (target & MAP_MASK);
+	access_type	= tolower(argv[5][0]);
+
+	/* read access, only if maxima 6 command line arguments given */
+    if (argc == 6) {
 		switch(access_type) {
 			case 'b':
-				*((uint8_t *) virt_addr) = writeval;
-				read_result = *((uint8_t *) virt_addr);
+				printf("OFFSET=0x%X; DATA=0x%02X;\n", (int) target, *((uint8_t *) virt_addr)); fflush(stdout);
 				break;
 			case 'h':
-				*((uint16_t *) virt_addr) = writeval;
-				read_result = *((uint16_t *) virt_addr);
+				printf("OFFSET=0x%X; DATA=0x%04X;\n", (int) target, *((uint16_t *) virt_addr)); fflush(stdout);
 				break;
 			case 'w':
-				*((uint32_t *) virt_addr) = writeval;
-				read_result = *((uint32_t *) virt_addr);
+				printf("OFFSET=0x%X; DATA=0x%08X;\n", (int) target, *((uint32_t *) virt_addr)); fflush(stdout);
+				break;
+			default:
+				printf("ERROR: Illegal data type '%c'.\n", access_type);
+				exit(EXIT_FAILURE);
+		}
+	
+	/* write access, only one written value supported */
+	} else if (argc == 7) {
+		switch(access_type) {
+			case 'b':
+				*((uint8_t *) virt_addr) = strtoul(argv[6], 0, 0);
+				sprintf(charReadVal, "0x%08X", *((uint8_t *) virt_addr));
+				break;
+			case 'h':
+				*((uint16_t *) virt_addr)	= strtoul(argv[6], 0, 0);
+				sprintf(charReadVal, "0x%08X", *((uint16_t *) virt_addr));
+				break;
+			case 'w':
+				*((uint32_t *) virt_addr)	= strtoul(argv[6], 0, 0);
+				sprintf(charReadVal, "0x%08X", *((uint32_t *) virt_addr));
 				break;
 		}
 		/* perform Write/Read Compare */
-		sprintf(charWriteVal, "0x%08X", writeval);			// convert write value into hexadecimal string
-		sprintf(charReadVal, "0x%08X", read_result);		// convert to hexadecimal string
+		sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));	// convert write value into hexadecimal string
 		if (strcmp(charReadVal, charWriteVal) != 0) {
 			printf("WARNING: WRITE=%s; READ=%s;\n", charWriteVal, charReadVal); fflush(stdout);
 		}
+	
+	/* write access, multiple data forbidden */
+	} else {
+		printf("WARNING: Single data value write only supported.\n");
 	}
+
 
 	/* unmap PCI handle */
 	if(munmap(map_base, MAP_SIZE) == -1) {

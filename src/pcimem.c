@@ -169,12 +169,12 @@ int main(int argc, char **argv) {
 			case 'h':
 				*((uint16_t *) virt_addr)	= strtoul(argv[6], 0, 0);
 				sprintf(charReadVal, "0x%04X", *((uint16_t *) virt_addr));
-				sprintf(charWriteVal, "0x%04X", (uint8_t) strtoul(argv[6], 0, 0));		// convert write value into hexadecimal string
+				sprintf(charWriteVal, "0x%04X", (uint16_t) strtoul(argv[6], 0, 0));		// convert write value into hexadecimal string
 				break;
 			case 'w':
 				*((uint32_t *) virt_addr)	= strtoul(argv[6], 0, 0);
 				sprintf(charReadVal, "0x%08X", *((uint32_t *) virt_addr));
-				sprintf(charWriteVal, "0x%08X", (uint8_t) strtoul(argv[6], 0, 0));		// convert write value into hexadecimal string
+				sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));		// convert write value into hexadecimal string
 				break;
 		}
 		/* perform Write/Read Compare */

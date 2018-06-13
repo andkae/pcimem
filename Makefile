@@ -23,20 +23,28 @@ CC=gcc
 # set compiler flags
 CFLAGS=-c -Wall -Wextra
 
+# set linker
+LINKER   = gcc
 
-all: pcimem
+# linking flags here
+LFLAGS   = -Wall -Wextra -I. -lm
 
 
-pcimem: pcimem.o pciinfo.o
+
+all: ./bin/pcimem
 
 
-pcimem.o: ./src/pcimem.c
-	$(CC) $(CFLAGS) ./src/pcimem.c
+./bin/pcimem: ./obj/pcimem.o ./obj/pciinfo.o
+	$(LINKER) ./obj/pcimem.o ./obj/pciinfo.o $(LFLAGS) -o ./bin/pcimem
+
+
+./obj/pcimem.o: ./src/pcimem.c
+	$(CC) $(CFLAGS) ./src/pcimem.c -o ./obj/pcimem.o
 	
 	
-pciinfo.o: ./inc/bus/pci/pciinfo/pciinfo.c
-	$(CC) $(CFLAGS) ./inc/bus/pci/pciinfo/pciinfo.c
+./obj/pciinfo.o: ./inc/pciinfo/src/pciinfo.c
+	$(CC) $(CFLAGS) ./inc/pciinfo/src/pciinfo.c -o ./obj/pciinfo.o
 
 	
 clean:
-	rm *o pcimem
+	rm ./obj/*o ./bin/pcimem

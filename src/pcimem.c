@@ -59,7 +59,7 @@
 
 
 /** User Libs **/
-#include "../inc/bus/pci/pciinfo/pciinfo.h"
+#include "../inc/pciinfo//src/pciinfo.h"
 
 
 /** Precompiler directives **/
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 
 	/* check for root rights */
 	if (getuid()) {
-		printf("ERROR: root rights required! Try 'sudo ./%s'\n", argv[0]);
+		printf("ERROR: root rights required! Try 'sudo %s'\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 

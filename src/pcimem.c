@@ -145,13 +145,13 @@ int main(int argc, char **argv) {
     if (argc == 6) {
 		switch(access_type) {
 			case 'b':
-				printf("OFFSET=0x%X; DATA=0x%02X;\n", (int) target, *((uint8_t *) virt_addr)); fflush(stdout);
+				printf("OFFSET=0x%08X; DATA=0x%02X;\n", (int) target, *((uint8_t *) virt_addr)); fflush(stdout);
 				break;
 			case 'h':
-				printf("OFFSET=0x%X; DATA=0x%04X;\n", (int) target, *((uint16_t *) virt_addr)); fflush(stdout);
+				printf("OFFSET=0x%08X; DATA=0x%04X;\n", (int) target, *((uint16_t *) virt_addr)); fflush(stdout);
 				break;
 			case 'w':
-				printf("OFFSET=0x%X; DATA=0x%08X;\n", (int) target, *((uint32_t *) virt_addr)); fflush(stdout);
+				printf("OFFSET=0x%08X; DATA=0x%08X;\n", (int) target, *((uint32_t *) virt_addr)); fflush(stdout);
 				break;
 			default:
 				printf("ERROR: Illegal data type '%c'.\n", access_type);

@@ -153,13 +153,13 @@ int main(int argc, char **argv)
     if (argc == 6) {
 		switch(access_type) {
 			case 'b':
-				printf("OFFSET=0x%08x; DATA=0x%02X;\n", (size_t) (uint32BarOfs & ~0), *((uint8_t *) (map_base + (uint32PageOffset & ~0)))); fflush(stdout);
+				printf("OFFSET=0x%08zX; DATA=0x%02X;\n", (size_t) (uint32BarOfs & ~0), *((uint8_t *) (map_base + (uint32PageOffset & ~0)))); fflush(stdout);
 				break;
 			case 'h':
-				printf("OFFSET=0x%08x; DATA=0x%04X;\n", (size_t) (uint32BarOfs & ~1), *((uint16_t *) (map_base + (uint32PageOffset & ~1)))); fflush(stdout);
+				printf("OFFSET=0x%08zX; DATA=0x%04X;\n", (size_t) (uint32BarOfs & ~1), *((uint16_t *) (map_base + (uint32PageOffset & ~1)))); fflush(stdout);
 				break;
 			case 'w':
-				printf("OFFSET=0x%08x; DATA=0x%08X;\n", (size_t) (uint32BarOfs & ~3), *((uint32_t *) (map_base + (uint32PageOffset & ~3)))); fflush(stdout);
+				printf("OFFSET=0x%08zX; DATA=0x%08X;\n", (size_t) (uint32BarOfs & ~3), *((uint32_t *) (map_base + (uint32PageOffset & ~3)))); fflush(stdout);
 				break;
 			default:
 				printf("ERROR: Illegal data type '%c'.\n", access_type);

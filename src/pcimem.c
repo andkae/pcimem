@@ -143,9 +143,9 @@ int main(int argc, char **argv)
 	uint32PageOffset 	= uint32BarOfs - uint32ActualPage*uint32PageSize;	// calculate offset in actual page
     
     /* Map one page */
-    map_base = mmap(0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, uint32ActualPage);
+    map_base = mmap(0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, uint32ActualPage*uint32PageSize);
     if(map_base == (void *) -1) {
-		printf("ERROR: mmap(%d, %d, 0x%x, 0x%x, %d, 0x%zx)\n", 0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (size_t) uint32ActualPage);
+		printf("ERROR: mmap(%d, %d, 0x%x, 0x%x, %d, 0x%zx)\n", 0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (size_t) uint32ActualPage*uint32PageSize);
 		exit(EXIT_FAILURE);
 	}
 

@@ -62,26 +62,27 @@
 #include "../inc/pciinfo//src/pciinfo.h"
 
 
-/** Precompiler directives **/
-#define MAP_SIZE 4096UL
-#define MAP_MASK (MAP_SIZE - 1)
-
-
 /** 
  *  main
  * 	----
  */
-int main(int argc, char **argv) {
-	int fd;
-	void *map_base, *virt_addr;
-	char *vendorID, *deviceID, *bar;
-	char filename[1024];
-	char charWriteVal[12];
-	char charReadVal[12];
+int main(int argc, char **argv) 
+{
+	/** Variables **/
+	const uint32_t	uint32PageSize = getpagesize();		// OS page size in bytes
+	int 			fd;
+	void			*map_base;
+	char 			*vendorID, *deviceID, *bar;
+	char 			filename[1024];
+	char 			charWriteVal[12];
+	char 			charReadVal[12];
+	off_t 			target;
+	int 			access_type = 'w';
+	uint32_t		uint32BarSizeByte = 0;				// barsize
+	uint32_t		uint32ActualPage;					// page to mount
+	uint32_t		memPageOffset;						// offset inside memory page
 	
-	off_t target;
-	int access_type = 'w';
-
+	
 
 	/* check for root rights */
 	if (getuid()) {
@@ -93,15 +94,23 @@ int main(int argc, char **argv) {
 	if(argc < 6) {
 		// pcimem	0x110A	0x4080	0 		0x100	w 		0x00
 		// argv[0]  [1]   	[2]     [3] 	[4]   	[5]		[6]
-		fprintf(stderr, "\nUsage:\t%s { vendorID } { deviceID } { bar } { offset } { type } [ data ] ]\n"
-			"\tvendorID: vendor identification of PCI device f.e. 0x110A\n"
-			"\tdeviceID: device identification of PCI device f.e. 0x4080\n"
-			"\tbar     : bar of targeted PCI device\n"
-			"\toffset  : offset into pci memory region to act upon\n"
-			"\ttype    : access operation type : [b]yte, [h]alfword, [w]ord\n"
-			"\tdata    : data to be written\n\n",
-			argv[0]);
-		exit(1);
+		printf("\n");
+		printf("Usage:\n");
+		printf("  %s vendorID deviceID bar offset type [ data ]\n", argv[0]);
+		printf("\n");
+		printf("Arguments:\n");
+		printf("  vendorID   vendor identification of PCI device f.e. 0x110A\n");
+		printf("  deviceID   device identification of PCI device f.e. 0x4080\n");
+		printf("  bar        bar of targeted PCI device\n");
+		printf("  offset     byte offset in BAR\n");
+		printf("  type       access data width\n");
+		printf("              [b]yte,      8Bit\n");
+		printf("              [h]alfword, 16Bit\n");
+		printf("              [w]ord,     32Bit\n");
+		printf("  data       write data\n");
+		printf("\n");
+		printf("\n");
+		exit(EXIT_FAILURE);
 	}
 	
 	/* assign command line arguments to variables */
@@ -109,6 +118,7 @@ int main(int argc, char **argv) {
 	deviceID 	= argv[2];
 	bar			= argv[3];
 	target 		= strtoul(argv[4], 0, 0);
+	access_type	= tolower(argv[5][0]);
 
 	/* find pci device */
 	if (pciinfoFind(vendorID, deviceID, filename, sizeof(filename)/sizeof(filename[0])) != 0) {
@@ -122,36 +132,45 @@ int main(int argc, char **argv) {
 	 */
 	strcat(filename, "/resource");
 	strcat(filename, bar);	
+	
+    /* check if bar offset is inside bar */
+    if ( pciinfoBarSize(filename, &uint32BarSizeByte) != 0 ) {
+		printf("ERROR: failed to acquire BAR=%c byte size", *bar);
+		exit(EXIT_FAILURE);
+	}
+	if ( (uint32_t) (target) > uint32BarSizeByte ) {
+		printf("ERROR: Offset = 0x%zx exceeds PCI Bar size = 0x%zx\n", (size_t) target, (size_t) uint32BarSizeByte);
+		exit(EXIT_FAILURE);
+	}
 
-		
 	/* open bar handle */
     if((fd = open(filename, O_RDWR | O_SYNC)) == -1) {
 		printf("ERROR: open '%s' failed\n", filename);
 		exit(EXIT_FAILURE);
     }
 	
+    /* calculate page and page offset */
+	uint32ActualPage 	= target/uint32PageSize;								// if offset larger then system page, calc needed page
+	memPageOffset 		= (uint32_t) target - uint32ActualPage*uint32PageSize;	// calculate offset in actual page
+    
     /* Map one page */
-    map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, target & ~MAP_MASK);
+    map_base = mmap(0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, uint32ActualPage);
     if(map_base == (void *) -1) {
-		printf("ERROR: mmap(%d, %ld, 0x%x, 0x%x, %d, 0x%x)\n", 0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (int) target);
+		printf("ERROR: mmap(%d, %d, 0x%x, 0x%x, %d, 0x%zx)\n", 0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (size_t) uint32ActualPage);
 		exit(EXIT_FAILURE);
 	}
-
-	/* prepare for PCI memory access */
-	virt_addr	= map_base + (target & MAP_MASK);
-	access_type	= tolower(argv[5][0]);
 
 	/* read access, only if maxima 6 command line arguments given */
     if (argc == 6) {
 		switch(access_type) {
 			case 'b':
-				printf("OFFSET=0x%08X; DATA=0x%02X;\n", (int) target, *((uint8_t *) virt_addr)); fflush(stdout);
+				printf("OFFSET=0x%zX; DATA=0x%02X;\n", (size_t) (target & ~0), *((uint8_t *) (map_base + (memPageOffset/1)))); fflush(stdout);
 				break;
 			case 'h':
-				printf("OFFSET=0x%08X; DATA=0x%04X;\n", (int) target, *((uint16_t *) virt_addr)); fflush(stdout);
+				printf("OFFSET=0x%zX; DATA=0x%04X;\n", (size_t) (target & ~1), *((uint16_t *) (map_base + (memPageOffset/2)))); fflush(stdout);
 				break;
 			case 'w':
-				printf("OFFSET=0x%08X; DATA=0x%08X;\n", (int) target, *((uint32_t *) virt_addr)); fflush(stdout);
+				printf("OFFSET=0x%zX; DATA=0x%08X;\n", (size_t) (target & ~3), *((uint32_t *) (map_base + (memPageOffset/4)))); fflush(stdout);
 				break;
 			default:
 				printf("ERROR: Illegal data type '%c'.\n", access_type);
@@ -162,19 +181,19 @@ int main(int argc, char **argv) {
 	} else if (argc == 7) {
 		switch(access_type) {
 			case 'b':
-				*((uint8_t *) virt_addr) = strtoul(argv[6], 0, 0);
-				sprintf(charReadVal, "0x%02X", *((uint8_t *) virt_addr));
-				sprintf(charWriteVal, "0x%02X", (uint8_t) strtoul(argv[6], 0, 0));		// convert write value into hexadecimal string
+				*((uint8_t *) (map_base + (memPageOffset/1))) = strtoul(argv[6], 0, 0);
+				sprintf(charReadVal, "0x%02X", *((uint8_t *) (map_base + (memPageOffset/1))));	// read back
+				sprintf(charWriteVal, "0x%02X", (uint8_t) strtoul(argv[6], 0, 0));				// convert write value into hexadecimal string
 				break;
 			case 'h':
-				*((uint16_t *) virt_addr)	= strtoul(argv[6], 0, 0);
-				sprintf(charReadVal, "0x%04X", *((uint16_t *) virt_addr));
-				sprintf(charWriteVal, "0x%04X", (uint16_t) strtoul(argv[6], 0, 0));		// convert write value into hexadecimal string
+				*((uint16_t *) (map_base + (memPageOffset/2))) = strtoul(argv[6], 0, 0);
+				sprintf(charReadVal, "0x%04X", *((uint16_t *) (map_base + (memPageOffset/2))));	// read
+				sprintf(charWriteVal, "0x%04X", (uint16_t) strtoul(argv[6], 0, 0));				// convert write value into hexadecimal string
 				break;
 			case 'w':
-				*((uint32_t *) virt_addr)	= strtoul(argv[6], 0, 0);
-				sprintf(charReadVal, "0x%08X", *((uint32_t *) virt_addr));
-				sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));		// convert write value into hexadecimal string
+				*((uint32_t *) (map_base + (memPageOffset/4))) = strtoul(argv[6], 0, 0);
+				sprintf(charReadVal, "0x%08X", *((uint32_t *) (map_base + (memPageOffset/4))));	// read back
+				sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));				// convert write value into hexadecimal string
 				break;
 		}
 		/* perform Write/Read Compare */
@@ -189,7 +208,7 @@ int main(int argc, char **argv) {
 
 
 	/* unmap PCI handle */
-	if(munmap(map_base, MAP_SIZE) == -1) {
+	if(munmap(map_base, uint32PageSize) == -1) {
 		printf("ERROR: Unmapping PCI device\n");
 		exit(EXIT_FAILURE);
 	}

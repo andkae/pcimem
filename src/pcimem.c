@@ -164,13 +164,13 @@ int main(int argc, char **argv)
     if (argc == 6) {
 		switch(access_type) {
 			case 'b':
-				printf("OFFSET=0x%zX; DATA=0x%02X;\n", (size_t) (target & ~0), *((uint8_t *) (map_base + (memPageOffset/1)))); fflush(stdout);
+				printf("OFFSET=0x%08x; DATA=0x%02X;\n", (size_t) (target & ~0), *((uint8_t *) (map_base + (memPageOffset/1)))); fflush(stdout);
 				break;
 			case 'h':
-				printf("OFFSET=0x%zX; DATA=0x%04X;\n", (size_t) (target & ~1), *((uint16_t *) (map_base + (memPageOffset/2)))); fflush(stdout);
+				printf("OFFSET=0x%08x; DATA=0x%04X;\n", (size_t) (target & ~1), *((uint16_t *) (map_base + (memPageOffset/2)))); fflush(stdout);
 				break;
 			case 'w':
-				printf("OFFSET=0x%zX; DATA=0x%08X;\n", (size_t) (target & ~3), *((uint32_t *) (map_base + (memPageOffset/4)))); fflush(stdout);
+				printf("OFFSET=0x%08x; DATA=0x%08X;\n", (size_t) (target & ~3), *((uint32_t *) (map_base + (memPageOffset/4)))); fflush(stdout);
 				break;
 			default:
 				printf("ERROR: Illegal data type '%c'.\n", access_type);

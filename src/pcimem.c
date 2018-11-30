@@ -76,13 +76,11 @@ int main(int argc, char **argv)
 	char 			filename[1024];
 	char 			charWriteVal[12];
 	char 			charReadVal[12];
-	off_t 			target;
 	int 			access_type = 'w';
-	uint32_t		uint32BarSizeByte = 0;				// barsize
 	uint32_t		uint32ActualPage;					// page to mount
-	uint32_t		memPageOffset;						// offset inside memory page
-	
-	
+	uint32_t		uint32PageOffset;					// offset inside memory page
+	uint32_t		uint32BarOfs;						// Bar offset
+
 
 	/* check for root rights */
 	if (getuid()) {
@@ -114,11 +112,11 @@ int main(int argc, char **argv)
 	}
 	
 	/* assign command line arguments to variables */
-	vendorID 	= argv[1];
-	deviceID 	= argv[2];
-	bar			= argv[3];
-	target 		= strtoul(argv[4], 0, 0);
-	access_type	= tolower(argv[5][0]);
+	vendorID 		= argv[1];
+	deviceID 		= argv[2];
+	bar				= argv[3];
+	uint32BarOfs	= (uint32_t) strtoul(argv[4], 0, 0);
+	access_type		= tolower(argv[5][0]);
 
 	/* find pci device */
 	if (pciinfoFind(vendorID, deviceID, filename, sizeof(filename)/sizeof(filename[0])) != 0) {
@@ -133,25 +131,16 @@ int main(int argc, char **argv)
 	strcat(filename, "/resource");
 	strcat(filename, bar);	
 	
-    /* check if bar offset is inside bar */
-    if ( pciinfoBarSize(filename, &uint32BarSizeByte) != 0 ) {
-		printf("ERROR: failed to acquire BAR=%c byte size", *bar);
-		exit(EXIT_FAILURE);
-	}
-	if ( (uint32_t) (target) > uint32BarSizeByte ) {
-		printf("ERROR: Offset = 0x%zx exceeds PCI Bar size = 0x%zx\n", (size_t) target, (size_t) uint32BarSizeByte);
-		exit(EXIT_FAILURE);
-	}
-
 	/* open bar handle */
     if((fd = open(filename, O_RDWR | O_SYNC)) == -1) {
 		printf("ERROR: open '%s' failed\n", filename);
 		exit(EXIT_FAILURE);
     }
 	
+
     /* calculate page and page offset */
-	uint32ActualPage 	= target/uint32PageSize;								// if offset larger then system page, calc needed page
-	memPageOffset 		= (uint32_t) target - uint32ActualPage*uint32PageSize;	// calculate offset in actual page
+	uint32ActualPage 	= uint32BarOfs / uint32PageSize;					// if offset larger then system page, calc needed page
+	uint32PageOffset 	= uint32BarOfs - uint32ActualPage*uint32PageSize;	// calculate offset in actual page
     
     /* Map one page */
     map_base = mmap(0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, uint32ActualPage);
@@ -164,13 +153,13 @@ int main(int argc, char **argv)
     if (argc == 6) {
 		switch(access_type) {
 			case 'b':
-				printf("OFFSET=0x%08x; DATA=0x%02X;\n", (size_t) (target & ~0), *((uint8_t *) (map_base + (memPageOffset/1)))); fflush(stdout);
+				printf("OFFSET=0x%08x; DATA=0x%02X;\n", (size_t) (uint32BarOfs & ~0), *((uint8_t *) (map_base + (uint32PageOffset & ~0)))); fflush(stdout);
 				break;
 			case 'h':
-				printf("OFFSET=0x%08x; DATA=0x%04X;\n", (size_t) (target & ~1), *((uint16_t *) (map_base + (memPageOffset/2)))); fflush(stdout);
+				printf("OFFSET=0x%08x; DATA=0x%04X;\n", (size_t) (uint32BarOfs & ~1), *((uint16_t *) (map_base + (uint32PageOffset & ~1)))); fflush(stdout);
 				break;
 			case 'w':
-				printf("OFFSET=0x%08x; DATA=0x%08X;\n", (size_t) (target & ~3), *((uint32_t *) (map_base + (memPageOffset/4)))); fflush(stdout);
+				printf("OFFSET=0x%08x; DATA=0x%08X;\n", (size_t) (uint32BarOfs & ~3), *((uint32_t *) (map_base + (uint32PageOffset & ~3)))); fflush(stdout);
 				break;
 			default:
 				printf("ERROR: Illegal data type '%c'.\n", access_type);
@@ -181,19 +170,19 @@ int main(int argc, char **argv)
 	} else if (argc == 7) {
 		switch(access_type) {
 			case 'b':
-				*((uint8_t *) (map_base + (memPageOffset/1))) = strtoul(argv[6], 0, 0);
-				sprintf(charReadVal, "0x%02X", *((uint8_t *) (map_base + (memPageOffset/1))));	// read back
-				sprintf(charWriteVal, "0x%02X", (uint8_t) strtoul(argv[6], 0, 0));				// convert write value into hexadecimal string
+				*((uint8_t *) (map_base + (uint32PageOffset & ~0))) = (uint8_t) strtoul(argv[6], 0, 0);		// write value
+				sprintf(charReadVal, "0x%02X", *((uint8_t *) (map_base + (uint32PageOffset & ~0))));		// read back
+				sprintf(charWriteVal, "0x%02X", (uint8_t) strtoul(argv[6], 0, 0));							// convert write value into hexadecimal string
 				break;
 			case 'h':
-				*((uint16_t *) (map_base + (memPageOffset/2))) = strtoul(argv[6], 0, 0);
-				sprintf(charReadVal, "0x%04X", *((uint16_t *) (map_base + (memPageOffset/2))));	// read
-				sprintf(charWriteVal, "0x%04X", (uint16_t) strtoul(argv[6], 0, 0));				// convert write value into hexadecimal string
+				*((uint16_t *) (map_base + (uint32PageOffset & ~1))) = (uint16_t) strtoul(argv[6], 0, 0);	// write
+				sprintf(charReadVal, "0x%04X", *((uint16_t *) (map_base + (uint32PageOffset & ~1))));		// read
+				sprintf(charWriteVal, "0x%04X", (uint16_t) strtoul(argv[6], 0, 0));							// convert write value into hexadecimal string
 				break;
 			case 'w':
-				*((uint32_t *) (map_base + (memPageOffset/4))) = strtoul(argv[6], 0, 0);
-				sprintf(charReadVal, "0x%08X", *((uint32_t *) (map_base + (memPageOffset/4))));	// read back
-				sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));				// convert write value into hexadecimal string
+				*((uint32_t *) (map_base + (uint32PageOffset & ~3))) = (uint32_t) strtoul(argv[6], 0, 0);	// write
+				sprintf(charReadVal, "0x%08X", *((uint32_t *) (map_base + (uint32PageOffset & ~3))));		// read back
+				sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));							// convert write value into hexadecimal string
 				break;
 		}
 		/* perform Write/Read Compare */

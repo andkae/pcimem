@@ -59,7 +59,7 @@
 
 
 /** User Libs **/
-#include "../inc/pciinfo//src/pciinfo.h"
+#include "../inc/pciinfo/src/pciinfo.h"
 
 
 /** 

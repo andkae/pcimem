@@ -7,9 +7,9 @@
  *  @file       pci_mem_rw.h
  *  @author     Andreas Kaeberlein <andreas.kaeberlein@siemens.com>
  *  @date       Nov 26, 2020
- * 
+ *
  *  @brief      PCI MM access
- * 
+ *
  *  provides  read/write access to memory mapped PCI address space
  *
  **********************************************************************/
@@ -33,12 +33,12 @@
  *  @author Andreas Kaeberlein
  */
 typedef struct t_pci_mem_rw {
-    uint8_t             uint8DbgMsgLevel;           /**<  mesage level      			*/
-    uint8_t             uint8IsOpen;              	/**<  handle is open           		*/
+    uint8_t             uint8DbgMsgLevel;           /**<  mesage level                  */
+    uint8_t             uint8IsOpen;                /**<  handle is open                */
     int                 intBarFh;                   /**<  Bar File handle               */
     void*               voidPtrMem;                 /**<  void pointer to mmap handle   */
-    uint32_t			uint32PageOffset;			/**<  offset in mempage         	*/
-    
+    uint32_t            uint32PageOffset;           /**<  offset in mempage             */
+
 } t_pci_mem_rw;
 
 

@@ -1,19 +1,19 @@
-# ***********************************************************************
-# @copyright    : Siemens AG, 2020
-# @license      : GPLv3
-# Address       : Clemens-Winkler-Strasse 3, 09116 Chemnitz
-# Telephone     : +49 371 4750
+# **********************************************************************
+#  @copyright	: Siemens AG
+#  @license		: GPLv3
+#  @author		: Andreas Kaeberlein
+#  @address		: Clemens-Winkler-Strasse 3, 09116 Chemnitz
 #
-# @author       : Andreas Kaeberlein
-# Email         : andreas.kaeberlein@siemens.com
-# Telephone     : +49 371 4810 2108
+#  @maintainer	: Andreas Kaeberlein
+#  @telephone	: +49 371 4810-2108
+#  @email		: andreas.kaeberlein@siemens.com
 #
-# @file         : Makefile
+#  @file		: Makefile
+#  @date		: 2016-12-06
 #
-# @brief        : build project
-#
-# @date         : 2016-12-06
-# *********************************************************************/
+#  @brief		: Build
+#				  builds sources with all dependencies
+# **********************************************************************
 
 
 
@@ -24,7 +24,9 @@ CC = gcc
 LINKER = gcc
 
 # set compiler flags
-CFLAGS = -c -O -Wall -Wextra -Wimplicit -Wconversion
+ifeq ($(origin CFLAGS), undefined)
+  CFLAGS = -c -O -Wall -Wextra -Wimplicit -Wconversion
+endif
 
 # linking flags here
 ifeq ($(origin LFLAGS), undefined)
@@ -32,23 +34,22 @@ ifeq ($(origin LFLAGS), undefined)
 endif
 
 
+all: pcimem
 
-all: ./bin/pcimem
-
-
-./bin/pcimem: ./obj/pcimem.o ./obj/pciinfo.o ./obj/pci_mem_rw.o
+pcimem: pcimem.o pciinfo.o pci_mem_rw.o
 	$(LINKER) ./obj/pcimem.o ./obj/pciinfo.o ./obj/pci_mem_rw.o $(LFLAGS) -o ./bin/pcimem
 
-
-./obj/pcimem.o: ./src/pcimem.c
+pcimem.o: ./src/pcimem.c
 	$(CC) $(CFLAGS) ./src/pcimem.c -o ./obj/pcimem.o
 
-./obj/pciinfo.o: ./inc/pciinfo/src/pciinfo.c
+pciinfo.o: ./inc/pciinfo/src/pciinfo.c
 	$(CC) $(CFLAGS) ./inc/pciinfo/src/pciinfo.c -o ./obj/pciinfo.o
 
-./obj/pci_mem_rw.o: ./src/pci_mem_rw.c
+pci_mem_rw.o: ./src/pci_mem_rw.c
 	$(CC) $(CFLAGS) ./src/pci_mem_rw.c -o ./obj/pci_mem_rw.o
 
+ci: ./src/pci_mem_rw.c
+	$(CC) $(CFLAGS) -Werror ./src/pci_mem_rw.c -o ./obj/pci_mem_rw.o
 
 clean:
 	rm -f ./obj/*o ./bin/pcimem

@@ -34,22 +34,22 @@ ifeq ($(origin LFLAGS), undefined)
 endif
 
 
-all: pcimem
+all: pcimem_cli
 
-pcimem: pcimem.o pciinfo.o pci_mem_rw.o
-	$(LINKER) ./obj/pcimem.o ./obj/pciinfo.o ./obj/pci_mem_rw.o $(LFLAGS) -o ./bin/pcimem
+pcimem_cli: pcimem_cli.o pciinfo.o pcimem.o
+	$(LINKER) ./obj/pcimem_cli.o ./obj/pciinfo.o ./obj/pcimem.o $(LFLAGS) -o ./bin/pcimem_cli
 
-pcimem.o: ./src/pcimem.c
-	$(CC) $(CFLAGS) ./src/pcimem.c -o ./obj/pcimem.o
+pcimem_cli.o: ./src/pcimem_cli.c
+	$(CC) $(CFLAGS) ./src/pcimem_cli.c -o ./obj/pcimem_cli.o
 
 pciinfo.o: ./inc/pciinfo/src/pciinfo.c
 	$(CC) $(CFLAGS) ./inc/pciinfo/src/pciinfo.c -o ./obj/pciinfo.o
 
-pci_mem_rw.o: ./src/pci_mem_rw.c
-	$(CC) $(CFLAGS) ./src/pci_mem_rw.c -o ./obj/pci_mem_rw.o
+pcimem.o: ./src/pcimem.c
+	$(CC) $(CFLAGS) ./src/pcimem.c -o ./obj/pcimem.o
 
-ci: ./src/pci_mem_rw.c
-	$(CC) $(CFLAGS) -Werror ./src/pci_mem_rw.c -o ./obj/pci_mem_rw.o
+ci: ./src/pcimem.c
+	$(CC) $(CFLAGS) -Werror ./src/pcimem.c -o ./obj/pcimem.o
 
 clean:
-	rm -f ./obj/*o ./bin/pcimem
+	rm -f ./obj/*o ./bin/pcimem_cli

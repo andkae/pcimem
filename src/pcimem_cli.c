@@ -60,7 +60,7 @@
 
 /** User Libs **/
 #include "../inc/pciinfo/src/pciinfo.h"	// PCI device search
-#include "pci_mem_rw.h"					// provides acces functions
+#include "pcimem.h"						// provides acces functions
 
 
 /**

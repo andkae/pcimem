@@ -1,16 +1,19 @@
- /**********************************************************************
- *  @copyright  Siemens AG, 2020
- *  @license    GPLv3
- *  Address     Clemens-Winkler-Strasse 3, 09116 Chemnitz
- *  Telephone   +49 371 4750
+/***********************************************************************
+ * @copyright   Siemens AG, 2021
+ * @license     GPLv3
+ * @author      Andreas Kaeberlein
+ * @address     Clemens-Winkler-Strasse 3, 09116 Chemnitz
  *
- *  @file       pci_mem_rw.c
- *  @author     Andreas Kaeberlein <andreas.kaeberlein@siemens.com>
- *  @date       Nov 26, 2020
+ * @maintainer  Andreas Kaeberlein
+ * @telephone   +49 371 4810-2108
+ * @email       andreas.kaeberlein@siemens.com
  *
- *  @brief      PCI MM access
+ * @file        pcimem.c
+ * @date        Nov 26, 2020
  *
- *  provides  read/write access to memory mapped PCI address space
+ * @brief       PCI MM access
+ *
+ * provides  read/write access to memory mapped PCI address space
  *
  **********************************************************************/
 
@@ -30,22 +33,22 @@
 #include <sys/types.h>      //
 #include <sys/mman.h>       // maps virtual to physical space
 /* User Libs */
-#include "pci_mem_rw.h"     // self
+#include "pcimem.h"         // self
 
 
 
 /**
- *  pci_mem_rw_init
+ *  pcimem_init
  *    initializes common data structure
  */
-int pci_mem_rw_init( t_pci_mem_rw *this )
+int pcimem_init( t_pcimem *this )
 {
     /* init variable */
-    this->uint8DbgMsgLevel = 0;             // mesage level, disabled
-    this->uint8IsOpen = 0;                  // handle is open, closed
-    this->intBarFh = -1;                    // Bar File handle, invalid
-    this->voidPtrMem = NULL;                // void pointer to mmap handle
-    this->uint32PageOffset = (uint32_t) -1; // offset in mempage
+    this->uint8DbgMsgLevel = 0;     // mesage level, disabled
+    this->uint8IsOpen = 0;          // handle is open, closed
+    this->intBarFh = -1;            // Bar File handle, invalid
+    this->voidPtrMem = NULL;        // void pointer to mmap handle
+    this->uint32MemPageOffset = 0;  // offset in mempage
 
     /* finish function */
     return 0;
@@ -54,10 +57,10 @@ int pci_mem_rw_init( t_pci_mem_rw *this )
 
 
 /**
- *  x86_mmio_uart_set_verbose
+ *  pcimem_verbose
  *    set verbose level
  */
-int pci_mem_rw_set_verbose( t_pci_mem_rw *this, uint8_t level )
+int pcimem_verbose( t_pcimem *this, uint8_t level )
 {
     this->uint8DbgMsgLevel = level; // set message level
     return 0;                       // return function
@@ -66,68 +69,43 @@ int pci_mem_rw_set_verbose( t_pci_mem_rw *this, uint8_t level )
 
 
 /**
- *  pci_mem_rw_open
+ *  pcimem_open
  *    open memory window to hardware
  */
-int pci_mem_rw_open( t_pci_mem_rw *this, char path[], int8_t bar, uint32_t ofs )
+int pcimem_open( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset)
 {
     /** variables **/
     const uint32_t  uint32PageSize = (uint32_t) getpagesize();  // get OS page size in Bytes
-    char            charPciPath[1024];                          // path to file handle of correponsing bar
-    uint32_t        uint32BarOffsetInMemPages;                  // bar offset aligned to mem pages
+    uint32_t        uint32BarOffsetInMemPages;                  // PCI Bar offset in multiples of mempages
 
 
     /* Function Call Message */
     if ( 0 != this->uint8DbgMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
 
     /* check for empty path */
-    if ( 0 == strlen(path) ) {
+    if ( 0 == strlen(linuxPciBarPath) ) {
         if ( this->uint8DbgMsgLevel != 0 ) {
             printf("  ERROR:%s: Empty PCI path provided\n", __FUNCTION__);
         }
         return -1;
     }
 
-    /* check for enough memory
-     *   +12: '/resourceX'
-     */
-    if ( strlen(path)+12 > sizeof(charPciPath)/sizeof(charPciPath[0]) ) {
-        if ( this->uint8DbgMsgLevel != 0 ) {
-            printf("  ERROR:%s: not enough memory statically allocated\n", __FUNCTION__);
-        };
-        return -1;
-    }
-
-    /* Build Path to Bar, "/resourceX" */
-    if ( -1 == bar ) {
-        if ( 0 != this->uint8DbgMsgLevel ) {
-            printf("  ERROR:%s: BAR=%i is undefined\n", __FUNCTION__, bar);
-        };
-        return -1;
-    }
-    charPciPath[0] = '\0';  // make empty
-    sprintf(charPciPath, "%s/resource%i", path, bar);
-
-    /* Open bar as file handle */
-    this->intBarFh = open(charPciPath, O_RDWR | O_SYNC);
-    if ( this->intBarFh == -1 ) {
-        if ( 0 != this->uint8DbgMsgLevel ) {
-            printf("  ERROR:%s: Failed to open bar as file handle\n", __FUNCTION__);
-        };
-        return -1;
-    }
-    if ( 0 != this->uint8DbgMsgLevel ) {
-        printf("  INFO:%s: FH            = %s\n", __FUNCTION__, charPciPath);
-    }
-
     /* calculate Page of PCI space, and offset in Page */
-    uint32BarOffsetInMemPages   = ofs / uint32PageSize;                                         // bar offset in multiples of pages
-    this->uint32PageOffset      = (uint32_t) (ofs - uint32BarOffsetInMemPages*uint32PageSize);  // get offset in mempage
-    if ( 0 != this->uint8DbgMsgLevel ) {                                                               // debug output
-        printf("  INFO:%s: PAGESIZE      = %i\n",       __FUNCTION__, uint32PageSize);
-        printf("  INFO:%s: PCIBAROFFSET  = 0x%08zx\n",  __FUNCTION__, (size_t) ofs);
-        printf("  INFO:%s: MEMPAGE       = %i\n",       __FUNCTION__, uint32BarOffsetInMemPages);
-        printf("  INFO:%s: MEMPAGEOFFSET = 0x%08zx\n",  __FUNCTION__, (size_t) this->uint32PageOffset);
+    uint32BarOffsetInMemPages   = barOffset / uint32PageSize;                           // 32Bit address, get in multiple of page sizes
+    this->uint32MemPageOffset   = barOffset - uint32BarOffsetInMemPages*uint32PageSize; // get offset in mempage
+    if ( 0 != this->uint8DbgMsgLevel ) {                                                // debug output
+        printf("  INFO:%s:LINUX:   BARPATH       = %s\n",       __FUNCTION__, linuxPciBarPath);
+        printf("  INFO:%s:LINUX:   PAGESIZE      = %i\n",       __FUNCTION__, uint32PageSize);
+        printf("  INFO:%s:PCIMEM:  PCIBAROFFSET  = 0x%08zx\n",  __FUNCTION__, (size_t) barOffset);
+        printf("  INFO:%s:PCIMEM:  MEMPAGE       = %i\n",       __FUNCTION__, uint32BarOffsetInMemPages);
+        printf("  INFO:%s:PCIMEM:  MEMPAGEOFFSET = 0x%08zx\n",  __FUNCTION__, (size_t) this->uint32MemPageOffset);
+    }
+
+    /* Open file handle to bar */
+    this->intBarFh = open(linuxPciBarPath, O_RDWR | O_SYNC);
+    if ( this->intBarFh == -1 ) {
+        if ( this->uint8DbgMsgLevel != 0 ) { printf("  ERROR:%s: Failed open BAR as file handle\n", __FUNCTION__); };
+        return -1;
     }
 
     /*  Open Memory Window to hardware
@@ -135,7 +113,7 @@ int pci_mem_rw_open( t_pci_mem_rw *this, char path[], int8_t bar, uint32_t ofs )
      *  map one complete page
      */
     this->voidPtrMem = mmap(0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, this->intBarFh, uint32BarOffsetInMemPages*uint32PageSize);
-    if ( MAP_FAILED == this->voidPtrMem ) {
+    if ( this->voidPtrMem == MAP_FAILED ) {
         if ( 0 != this->uint8DbgMsgLevel ) {
             printf("  ERROR:%s: Registers mapping failed\n", __FUNCTION__);
             printf("    mmap(0, %i, PROT_READ | PROT_WRITE, MAP_SHARED, %i, %i)\n", uint32PageSize, this->intBarFh, uint32BarOffsetInMemPages*uint32PageSize);
@@ -143,13 +121,10 @@ int pci_mem_rw_open( t_pci_mem_rw *this, char path[], int8_t bar, uint32_t ofs )
         return -1;
     }
     if ( 0 != this->uint8DbgMsgLevel ) {
-        printf("  INFO:%s: PHYSICAL      = %p\n", __FUNCTION__, (void*) this->voidPtrMem);
+        printf("  INFO:%s:LINUX:   PHYSICAL      = %p\n", __FUNCTION__, (void*) this->voidPtrMem);
     }
 
     /* succesful opened */
-    if ( 0 != this->uint8DbgMsgLevel ) { // debug output
-        printf("  INFO:%s: BAR succesful mapped\n", __FUNCTION__);
-    }
     this->uint8IsOpen = 1;
 
     /* normal end */
@@ -159,10 +134,10 @@ int pci_mem_rw_open( t_pci_mem_rw *this, char path[], int8_t bar, uint32_t ofs )
 
 
 /**
- *  pci_mem_rw_close
+ *  pcimem_close
  *    closes handle
  */
-int pci_mem_rw_close( t_pci_mem_rw *this )
+int pcimem_close( t_pcimem *this )
 {
     /** variables **/
     const uint32_t  uint32PageSize = (uint32_t) getpagesize();  // get OS page size in Bytes
@@ -204,23 +179,17 @@ int pci_mem_rw_close( t_pci_mem_rw *this )
     this->intBarFh = -1;
 
     /* normal end */
-    if ( 0 != this->uint8DbgMsgLevel ) { // debug output
-        printf("  INFO:%s: BAR succesful closed\n", __FUNCTION__);
-    }
     return 0;
 }
 
 
 
 /**
- *  pci_mem_rw_read32
- *    read 32bit value from register
+ *  pcimem_ptr
+ *    returns memory pointer starting at offset given on open
  */
-int pci_mem_rw_read32( t_pci_mem_rw *this, uint32_t *val )
+void* pcimem_ptr( t_pcimem *this )
 {
-    /** Variables **/
-    volatile uint32_t* uint32PtrMem;    // memory pointer
-
     /* Function Call Message */
     if ( 0 != this->uint8DbgMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
 
@@ -229,50 +198,9 @@ int pci_mem_rw_read32( t_pci_mem_rw *this, uint32_t *val )
         if ( 0 != this->uint8DbgMsgLevel ) {
             printf("  ERROR:%s: handle not open\n", __FUNCTION__);
         }
-        return -1;
+        return NULL;
     }
 
-    /* build mem pointer */
-    uint32PtrMem = ((volatile uint32_t*) (this->voidPtrMem + this->uint32PageOffset));
-
-    /* read value */
-    *val = uint32PtrMem[0];
-
-    /* normal end */
-    return 0;
+    /* calc pointer */
+    return ((void*) (this->voidPtrMem + this->uint32MemPageOffset));
 }
-
-
-
-/**
- *  pci_mem_rw_write32
- *    read 32bit value from register
- */
-int pci_mem_rw_write32( t_pci_mem_rw *this, uint32_t val )
-{
-    /** Variables **/
-    volatile uint32_t* uint32PtrMem;    // memory pointer
-
-    /* Function Call Message */
-    if ( 0 != this->uint8DbgMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
-
-    /* handle open */
-    if ( 0 == this->uint8IsOpen ) {
-        if ( 0 != this->uint8DbgMsgLevel ) {
-            printf("  ERROR:%s: handle not open\n", __FUNCTION__);
-        }
-        return -1;
-    }
-
-    /* build mem pointer */
-    uint32PtrMem = ((volatile uint32_t*) (this->voidPtrMem + this->uint32PageOffset));
-
-    /* read value */
-    uint32PtrMem[0] = val;
-
-    /* normal end */
-    return 0;
-}
-
-
-

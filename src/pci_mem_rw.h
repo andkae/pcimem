@@ -1,24 +1,27 @@
- /**********************************************************************
- *  @copyright  Siemens AG, 2020
- *  @license    GPLv3
- *  Address     Clemens-Winkler-Strasse 3, 09116 Chemnitz
- *  Telephone   +49 371 4750
+/***********************************************************************
+ * @copyright   Siemens AG, 2021
+ * @license     GPLv3
+ * @author      Andreas Kaeberlein
+ * @address     Clemens-Winkler-Strasse 3, 09116 Chemnitz
  *
- *  @file       pci_mem_rw.h
- *  @author     Andreas Kaeberlein <andreas.kaeberlein@siemens.com>
- *  @date       Nov 26, 2020
+ * @maintainer  Andreas Kaeberlein
+ * @telephone   +49 371 4810-2108
+ * @email       andreas.kaeberlein@siemens.com
  *
- *  @brief      PCI MM access
+ * @file        pcimem.h
+ * @date        Nov 26, 2020
  *
- *  provides  read/write access to memory mapped PCI address space
+ * @brief       PCI MM access
+ *
+ * provides  read/write access to memory mapped PCI address space
  *
  **********************************************************************/
 
 
 
 // Define Guard
-#ifndef __PCI_MEM_RW_H
-#define __PCI_MEM_RW_H
+#ifndef __PCIMEM_H
+#define __PCIMEM_H
 
 
 
@@ -32,14 +35,14 @@
  *  @since  Dec 3, 2020
  *  @author Andreas Kaeberlein
  */
-typedef struct t_pci_mem_rw {
-    uint8_t             uint8DbgMsgLevel;           /**<  mesage level                  */
-    uint8_t             uint8IsOpen;                /**<  handle is open                */
-    int                 intBarFh;                   /**<  Bar File handle               */
-    void*               voidPtrMem;                 /**<  void pointer to mmap handle   */
-    uint32_t            uint32PageOffset;           /**<  offset in mempage             */
+typedef struct t_pcimem {
+    uint8_t             uint8DbgMsgLevel;       /**<  mesage level                  */
+    uint8_t             uint8IsOpen;            /**<  handle is open                */
+    int                 intBarFh;               /**<  Bar File handle               */
+    void*               voidPtrMem;             /**<  void pointer to mmap handle   */
+    uint32_t            uint32MemPageOffset;    /**<  offset in mempage             */
 
-} t_pci_mem_rw;
+} t_pcimem;
 
 
 
@@ -60,7 +63,7 @@ extern "C"
  *  @since          Dec 03, 2020
  *  @author         Andreas Kaeberlein
  */
-int pci_mem_rw_init( t_pci_mem_rw *this );
+int pcimem_init( t_pcimem *this );
 
 
 /** @brief set verbose
@@ -74,7 +77,7 @@ int pci_mem_rw_init( t_pci_mem_rw *this );
  *  @since          Dec 03, 2020
  *  @author         Andreas Kaeberlein
  */
-int pci_mem_rw_set_verbose( t_pci_mem_rw *this, uint8_t level );
+int pcimem_verbose( t_pcimem *this, uint8_t level );
 
 
 /** @brief open memory-mapped handle
@@ -82,16 +85,15 @@ int pci_mem_rw_set_verbose( t_pci_mem_rw *this, uint8_t level );
  *  open memory window to hardware
  *
  *  @param[in,out]  this                storage element @ref t_pci_mem_rw
- *  @param[in]      path                linux system path to file which represents PCI device bar
- *  @param[in]      bar                 pci device bar
- *  @param[in]      ofs                 bar offset
+ *  @param[in]      linuxPciBarPath     linux system path to file which represents PCI device bar
+ *  @param[in]      barOffset           bar offset
  *  @return         int                 state
  *  @retval         0                   OK
  *  @retval         -1                  FAIL
  *  @since          Dec 03, 2020
  *  @author         Andreas Kaeberlein
  */
-int pci_mem_rw_open( t_pci_mem_rw *this, char path[], int8_t bar, uint32_t ofs );
+int pcimem_open( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset );
 
 
 /** @brief close memory-mapped handle
@@ -105,40 +107,21 @@ int pci_mem_rw_open( t_pci_mem_rw *this, char path[], int8_t bar, uint32_t ofs )
  *  @since          Dec 03, 2020
  *  @author         Andreas Kaeberlein
  */
-int pci_mem_rw_close( t_pci_mem_rw *this );
+int pcimem_close( t_pcimem *this );
 
 
-/** @brief read32
+/** @brief memory pointer
  *
- *  read 32bit value from register
- *
- *  @param[in,out]  this                storage element @ref t_pci_mem_rw
- *  @param[in,out]  val                 register read value
- *  @return         int                 state
- *  @retval         0                   OK
- *  @retval         -1                  FAIL
- *  @since          Dec 03, 2020
- *  @author         Andreas Kaeberlein
- */
-int pci_mem_rw_read32( t_pci_mem_rw *this, uint32_t *val );
-
-
-/** @brief write32
- *
- *  write 32bit value
+ *  returns memory pointer starting at offset given on open
  *
  *  @param[in,out]  this                storage element @ref t_pci_mem_rw
- *  @param[in]      val                 register write
- *  @return         int                 state
- *  @retval         0                   OK
- *  @retval         -1                  FAIL
- *  @since          Dec 03, 2020
+ *  @return         void*               state
+ *  @retval         NULL                memory handle not valid
+ *  @retval         VAL                 memory window is open
+ *  @since          Jul 28, 2021
  *  @author         Andreas Kaeberlein
  */
-int pci_mem_rw_write32( t_pci_mem_rw *this, uint32_t val );
-
-
-
+void* pcimem_ptr( t_pcimem *this );
 
 
 #ifdef __cplusplus

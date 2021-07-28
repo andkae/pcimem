@@ -1,66 +1,37 @@
-/**
- *  @file       pcimem.c
- *  @author     Andreas Kaeberlein <andreas.kaeberlein.ext@siemens.com>, Heitec AG
- *  @date       Feb 3, 2017
- *  @version    1.0
+/***********************************************************************
+ * @copyright   Siemens AG, 2021
+ * @license     GPLv3
+ * @author      Andreas Kaeberlein
+ * @address     Clemens-Winkler-Strasse 3, 09116 Chemnitz
  *
- *  @brief      simple pci bus access tool
+ * @maintainer  Andreas Kaeberlein
+ * @telephone   +49 371 4810-2108
+ * @email       andreas.kaeberlein@siemens.com
  *
- *  simple pci bus access tool; Original file header below
+ * @file        pcimem_cli.c
+ * @date        Jul 28, 2021
+ * @see         https://github.com/hackndev/tools/blob/master/devmem2.c
  *
- *  @copyright  (c) All Rights Reserved
- *  Company     Siemens AG
- *  Address     Clemens-Winkler-Strasse 3, 09116 Chemnitz
- *  Telephone   +49 371 4851
+ * @brief       PCI MM access
  *
- */
+ * provides  read/write access to memory mapped PCI address space
+ *
+ **********************************************************************/
 
 
 
-/*
- * pcimem.c: Simple program to read/write from/to a pci device from userspace.
- *
- *  Copyright (C) 2010, Bill Farrow (bfarrow@beyondelectronics.us)
- *
- *  Based on the devmem2.c code
- *  Copyright (C) 2000, Jan-Derk Bakker (J.D.Bakker@its.tudelft.nl)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- */
-
-
-
-/** Standard libs **/
+/** Include **/
+/* Standard libs */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
-#include <errno.h>
-#include <signal.h>
-#include <fcntl.h>
 #include <ctype.h>
-#include <termios.h>
-#include <sys/types.h>
-#include <sys/mman.h>
+/* User Libs */
+#include "../inc/pciinfo/src/pciinfo.h" // PCI device search
+#include "pcimem.h"                     // provides acces functions
 
-
-/** User Libs **/
-#include "../inc/pciinfo/src/pciinfo.h"	// PCI device search
-#include "pcimem.h"						// provides acces functions
 
 
 /**
@@ -70,17 +41,12 @@
 int main(int argc, char **argv)
 {
     /** Variables **/
-    const uint32_t  uint32PageSize = getpagesize();     // OS page size in bytes
-    int             fd;
-    void            *map_base;
-    char            *vendorID, *deviceID, *bar;
-    char            filename[1024];
-    char            charWriteVal[12];
-    char            charReadVal[12];
-    int             access_type = 'w';
-    uint32_t        uint32ActualPage;                   // page to mount
-    uint32_t        uint32PageOffset;                   // offset inside memory page
-    uint32_t        uint32BarOfs;                       // Bar offset
+    char        charPciBarPath[1024];   // Path to PCI device
+    t_pcimem    pciHandle;              // manages interaction with pci devices
+    char        charWriteVal[12];
+    char        charReadVal[12];
+    uint32_t    uint32BarOfs;
+
 
 
     /* check for root rights */
@@ -88,6 +54,7 @@ int main(int argc, char **argv)
         printf("ERROR: root rights required! Try 'sudo %s'\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+
 
     /* to few arguments */
     if(argc < 6) {
@@ -108,103 +75,100 @@ int main(int argc, char **argv)
         printf("              [w]ord,     32Bit\n");
         printf("  data       write data\n");
         printf("\n");
+        printf("Contribute:\n");
+        printf("  https://code.siemens.com/linuxHWtools/pciMemRW\n");
+        printf("\n");
         printf("\n");
         exit(EXIT_FAILURE);
     }
 
-    /* assign command line arguments to variables */
-    vendorID        = argv[1];
-    deviceID        = argv[2];
-    bar             = argv[3];
-    uint32BarOfs    = (uint32_t) strtoul(argv[4], 0, 0);
-    access_type     = tolower(argv[5][0]);
 
-    /* find pci device */
-    if (pciinfoFind(vendorID, deviceID, filename, sizeof(filename)/sizeof(filename[0])) != 0) {
-        printf("ERROR: Find PCI Device with VendorID=%s and DeviceID=%s\n", vendorID, deviceID);
-        exit(EXIT_FAILURE);
-    }
-
-    /*  build path to bar
-     *  before: /sys/bus/pci/devices/0000:03:0d.0/
-     *  after:  /sys/bus/pci/devices/0000:03:0d.0/resource<bar>
-     */
-    strcat(filename, "/resource");
-    strcat(filename, bar);
-
-    /* open bar handle */
-    if((fd = open(filename, O_RDWR | O_SYNC)) == -1) {
-        printf("ERROR: open '%s' failed\n", filename);
+    /* search for PCI device */
+    if ( 0 != pciinfoBarPath ( argv[1],                                         // vendorID
+                               argv[2],                                         // deviceID
+                               (uint8_t) atol(argv[3]),                         // bar
+                               charPciBarPath,                                  // devicePath
+                               sizeof(charPciBarPath)/sizeof(charPciBarPath[0]) // devicePathMax
+                             )
+    ) {
+        printf("ERROR: Find PCI Device with VendorID=%s, DeviceID=%s and Bar=%s\n", argv[1], argv[2], argv[3]);
         exit(EXIT_FAILURE);
     }
 
 
-    /* calculate page and page offset */
-    uint32ActualPage    = uint32BarOfs / uint32PageSize;                    // if offset larger then system page, calc needed page
-    uint32PageOffset    = uint32BarOfs - uint32ActualPage*uint32PageSize;   // calculate offset in actual page
-
-    /* Map one page */
-    map_base = mmap(0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, uint32ActualPage*uint32PageSize);
-    if(map_base == (void *) -1) {
-        printf("ERROR: mmap(%d, %d, 0x%x, 0x%x, %d, 0x%zx)\n", 0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (size_t) uint32ActualPage*uint32PageSize);
+    /* init pci handle */
+    if ( 0 != pcimem_init(&pciHandle) ) {
+        printf("ERROR: Failed to initiliaze PCI memory handle\n");
         exit(EXIT_FAILURE);
     }
+
+
+    /* open handle */
+    uint32BarOfs = (uint32_t) strtoul(argv[4], 0, 0);
+    if ( 0 != pcimem_open ( &pciHandle,     // common handle
+                            charPciBarPath, // linux system pci bar path
+                            uint32BarOfs    // bar offset
+                          )
+    ) {
+        printf("ERROR: Failed to open PCI memory handle\n");
+        exit(EXIT_FAILURE);
+    }
+
 
     /* read access, only if maxima 6 command line arguments given */
     if (argc == 6) {
-        switch(access_type) {
+        switch(tolower(argv[5][0])) {   // access type
             case 'b':
-                printf("OFFSET=0x%08zX; DATA=0x%02X;\n", (size_t) (uint32BarOfs & ~0), *((uint8_t *) (map_base + (uint32PageOffset & ~0)))); fflush(stdout);
+                printf("OFFSET=0x%08zX; DATA=0x%02X;\n", (size_t) uint32BarOfs, *((uint8_t *) pcimem_ptr(&pciHandle))); fflush(stdout);
                 break;
             case 'h':
-                printf("OFFSET=0x%08zX; DATA=0x%04X;\n", (size_t) (uint32BarOfs & ~1), *((uint16_t *) (map_base + (uint32PageOffset & ~1)))); fflush(stdout);
+                printf("OFFSET=0x%08zX; DATA=0x%04X;\n", (size_t) uint32BarOfs, *((uint16_t *) pcimem_ptr(&pciHandle))); fflush(stdout);
                 break;
             case 'w':
-                printf("OFFSET=0x%08zX; DATA=0x%08X;\n", (size_t) (uint32BarOfs & ~3), *((uint32_t *) (map_base + (uint32PageOffset & ~3)))); fflush(stdout);
+                printf("OFFSET=0x%08zX; DATA=0x%08X;\n", (size_t) uint32BarOfs, *((uint32_t *) pcimem_ptr(&pciHandle))); fflush(stdout);
                 break;
             default:
-                printf("ERROR: Illegal data type '%c'.\n", access_type);
+                printf("ERROR: Illegal data type '%c'.\n", tolower(argv[5][0]));
                 exit(EXIT_FAILURE);
         }
-
     /* write access, only one written value supported */
     } else if (argc == 7) {
-        switch(access_type) {
+        switch(tolower(argv[5][0])) {   // access type
             case 'b':
-                *((uint8_t *) (map_base + (uint32PageOffset & ~0))) = (uint8_t) strtoul(argv[6], 0, 0);     // write value
-                sprintf(charReadVal, "0x%02X", *((uint8_t *) (map_base + (uint32PageOffset & ~0))));        // read back
-                sprintf(charWriteVal, "0x%02X", (uint8_t) strtoul(argv[6], 0, 0));                          // convert write value into hexadecimal string
+                *((uint8_t *) pcimem_ptr(&pciHandle)) = (uint8_t) strtoul(argv[6], 0, 0);   // write value
+                sprintf(charReadVal, "0x%02X", *((uint8_t *) pcimem_ptr(&pciHandle)));      // read back
+                sprintf(charWriteVal, "0x%02X", (uint8_t) strtoul(argv[6], 0, 0));          // convert write value into hexadecimal string
                 break;
             case 'h':
-                *((uint16_t *) (map_base + (uint32PageOffset & ~1))) = (uint16_t) strtoul(argv[6], 0, 0);   // write
-                sprintf(charReadVal, "0x%04X", *((uint16_t *) (map_base + (uint32PageOffset & ~1))));       // read
-                sprintf(charWriteVal, "0x%04X", (uint16_t) strtoul(argv[6], 0, 0));                         // convert write value into hexadecimal string
+                *((uint16_t *) pcimem_ptr(&pciHandle)) = (uint16_t) strtoul(argv[6], 0, 0); // write
+                sprintf(charReadVal, "0x%04X", *((uint16_t *) pcimem_ptr(&pciHandle)));     // read
+                sprintf(charWriteVal, "0x%04X", (uint16_t) strtoul(argv[6], 0, 0));         // convert write value into hexadecimal string
                 break;
             case 'w':
-                *((uint32_t *) (map_base + (uint32PageOffset & ~3))) = (uint32_t) strtoul(argv[6], 0, 0);   // write
-                sprintf(charReadVal, "0x%08X", *((uint32_t *) (map_base + (uint32PageOffset & ~3))));       // read back
-                sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));                         // convert write value into hexadecimal string
+                *((uint32_t *) pcimem_ptr(&pciHandle)) = (uint32_t) strtoul(argv[6], 0, 0); // write
+                sprintf(charReadVal, "0x%08X", *((uint32_t *) pcimem_ptr(&pciHandle)));     // read back
+                sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));         // convert write value into hexadecimal string
                 break;
+            default:
+                printf("ERROR: Illegal data type '%c'.\n", tolower(argv[5][0]));
+                exit(EXIT_FAILURE);
         }
         /* perform Write/Read Compare */
         if (strcmp(charReadVal, charWriteVal) != 0) {
             printf("WARNING: WRITE=%s; READ=%s;\n", charWriteVal, charReadVal); fflush(stdout);
         }
-
     /* write access, multiple data forbidden */
     } else {
         printf("WARNING: Single data value write only supported.\n");
     }
 
 
-    /* unmap PCI handle */
-    if(munmap(map_base, uint32PageSize) == -1) {
-        printf("ERROR: Unmapping PCI device\n");
+    /* close handle */
+    if ( 0 != pcimem_close(&pciHandle) ) {
+        printf("ERROR: Failed to close PCI memory handle\n");
         exit(EXIT_FAILURE);
     }
 
-    /* close PCI bar file handle */
-    close(fd);
 
     /* graceful end */
     exit(EXIT_SUCCESS);

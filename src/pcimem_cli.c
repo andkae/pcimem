@@ -103,8 +103,21 @@ int main(int argc, char **argv)
     }
 
 
-    /* open handle */
+    /* align BAR offset to acces type */
     uint32BarOfs = (uint32_t) strtoul(argv[4], 0, 0);
+    switch(tolower(argv[5][0])) {
+        case 'h':
+            /* halfword access */
+            uint32BarOfs &= ~((uint32_t) 1);    // mask byte address
+            break;
+        case 'w':
+            /* word access */
+            uint32BarOfs &= ~((uint32_t) 3);    // mask byte/halfword address
+            break;
+    }
+
+
+    /* open handle */
     if ( 0 != pcimem_open ( &pciHandle,     // common handle
                             charPciBarPath, // linux system pci bar path
                             uint32BarOfs    // bar offset
@@ -119,13 +132,13 @@ int main(int argc, char **argv)
     if (argc == 6) {
         switch(tolower(argv[5][0])) {   // access type
             case 'b':
-                printf("OFFSET=0x%08zX; DATA=0x%02X;\n", (size_t) uint32BarOfs, *((uint8_t *) pcimem_ptr(&pciHandle))); fflush(stdout);
+                printf("OFFSET=0x%08zX; DATA=0x%02X;\n", (size_t) uint32BarOfs, *((volatile uint8_t *) pcimem_ptr(&pciHandle))); fflush(stdout);
                 break;
             case 'h':
-                printf("OFFSET=0x%08zX; DATA=0x%04X;\n", (size_t) uint32BarOfs, *((uint16_t *) pcimem_ptr(&pciHandle))); fflush(stdout);
+                printf("OFFSET=0x%08zX; DATA=0x%04X;\n", (size_t) uint32BarOfs, *((volatile uint16_t *) pcimem_ptr(&pciHandle))); fflush(stdout);
                 break;
             case 'w':
-                printf("OFFSET=0x%08zX; DATA=0x%08X;\n", (size_t) uint32BarOfs, *((uint32_t *) pcimem_ptr(&pciHandle))); fflush(stdout);
+                printf("OFFSET=0x%08zX; DATA=0x%08X;\n", (size_t) uint32BarOfs, *((volatile uint32_t *) pcimem_ptr(&pciHandle))); fflush(stdout);
                 break;
             default:
                 printf("ERROR: Illegal data type '%c'.\n", tolower(argv[5][0]));
@@ -135,19 +148,19 @@ int main(int argc, char **argv)
     } else if (argc == 7) {
         switch(tolower(argv[5][0])) {   // access type
             case 'b':
-                *((uint8_t *) pcimem_ptr(&pciHandle)) = (uint8_t) strtoul(argv[6], 0, 0);   // write value
-                sprintf(charReadVal, "0x%02X", *((uint8_t *) pcimem_ptr(&pciHandle)));      // read back
-                sprintf(charWriteVal, "0x%02X", (uint8_t) strtoul(argv[6], 0, 0));          // convert write value into hexadecimal string
+                *((volatile uint8_t *) pcimem_ptr(&pciHandle)) = (uint8_t) strtoul(argv[6], 0, 0);  // write value
+                sprintf(charReadVal, "0x%02X", *((volatile uint8_t *) pcimem_ptr(&pciHandle)));     // read back
+                sprintf(charWriteVal, "0x%02X", (uint8_t) strtoul(argv[6], 0, 0));                  // convert write value into hexadecimal string
                 break;
             case 'h':
-                *((uint16_t *) pcimem_ptr(&pciHandle)) = (uint16_t) strtoul(argv[6], 0, 0); // write
-                sprintf(charReadVal, "0x%04X", *((uint16_t *) pcimem_ptr(&pciHandle)));     // read
-                sprintf(charWriteVal, "0x%04X", (uint16_t) strtoul(argv[6], 0, 0));         // convert write value into hexadecimal string
+                *((volatile uint16_t *) pcimem_ptr(&pciHandle)) = (uint16_t) strtoul(argv[6], 0, 0);    // write
+                sprintf(charReadVal, "0x%04X", *((volatile uint16_t *) pcimem_ptr(&pciHandle)));        // read
+                sprintf(charWriteVal, "0x%04X", (uint16_t) strtoul(argv[6], 0, 0));                     // convert write value into hexadecimal string
                 break;
             case 'w':
-                *((uint32_t *) pcimem_ptr(&pciHandle)) = (uint32_t) strtoul(argv[6], 0, 0); // write
-                sprintf(charReadVal, "0x%08X", *((uint32_t *) pcimem_ptr(&pciHandle)));     // read back
-                sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));         // convert write value into hexadecimal string
+                *((volatile uint32_t *) pcimem_ptr(&pciHandle)) = (uint32_t) strtoul(argv[6], 0, 0);    // write
+                sprintf(charReadVal, "0x%08X", *((volatile uint32_t *) pcimem_ptr(&pciHandle)));        // read back
+                sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));                     // convert write value into hexadecimal string
                 break;
             default:
                 printf("ERROR: Illegal data type '%c'.\n", tolower(argv[5][0]));

@@ -4,9 +4,9 @@
 CLI tool and library to interact with PCI interfaced registers.
 
 
-## [CLI](./src/pcimem_cli.c)
+## [CLI](./src/pcimem_main.c)
 ```bash
-Usage:  sudo ./pcimem_cli { vendorID } { deviceID } { bar } { offset } { type } [ data ]
+Usage:  sudo ./bin/pcimem { vendorID } { deviceID } { bar } { offset } { type } [ data ]
   vendorID : PCI device vendor ID
   deviceID : PCI device device ID
   bar      : PCI Bar of device to accessed

@@ -8,7 +8,7 @@
  * @telephone   +49 371 4810-2108
  * @email       andreas.kaeberlein@siemens.com
  *
- * @file        pcimem_cli.c
+ * @file        pcimem_main.c
  * @date        Jul 28, 2021
  * @see         https://github.com/hackndev/tools/blob/master/devmem2.c
  *
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
         // argv[0]  [1]     [2]     [3]     [4]     [5]     [6]
         printf("\n");
         printf("Usage:\n");
-        printf("  %s vendorID deviceID bar offset type [ data ]\n", argv[0]);
+        printf("  %s { vendorID } { deviceID } { bar } { offset } { type } [ data ]\n", argv[0]);
         printf("\n");
         printf("Arguments:\n");
         printf("  vendorID   vendor identification of PCI device f.e. 0x110A\n");

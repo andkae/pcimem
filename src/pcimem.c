@@ -21,19 +21,20 @@
 
 /** Includes **/
 /* Standard libs */
-#include <stdio.h>          // f.e. printf
-#include <stdlib.h>         // defines four variables, several macros,
-                            // and various functions for performing
-                            // general functions
-#include <stdint.h>         // defines fixed data types, like int8_t...
-#include <unistd.h>         // system call wrapper functions such as fork, pipe and I/O primitives (read, write, close, etc.).
-#include <string.h>         // string handling functions
-#include <fcntl.h>          // manipulate file descriptor
+#include <stdio.h>      // f.e. printf
+#include <stdlib.h>     // defines four variables, several macros,
+                        // and various functions for performing
+                        // general functions
+#include <stdint.h>     // defines fixed data types, like int8_t...
+#include <unistd.h>     // system call wrapper functions such as fork, pipe and I/O primitives (read, write, close, etc.).
+#include <string.h>     // string handling functions
+#include <fcntl.h>      // manipulate file descriptor
+#include <stdarg.h>     // variable parameter list
 /* System specific libs */
-#include <sys/types.h>      //
-#include <sys/mman.h>       // maps virtual to physical space
+#include <sys/types.h>  //
+#include <sys/mman.h>   // maps virtual to physical space
 /* User Libs */
-#include "pcimem.h"         // self
+#include "pcimem.h"     // self
 
 
 
@@ -49,6 +50,7 @@ int pcimem_init( t_pcimem *this )
     this->intBarFh = -1;            // Bar File handle, invalid
     this->voidPtrMem = NULL;        // void pointer to mmap handle
     this->uint32MemPageOffset = 0;  // offset in mempage
+    this->uint32MapLen = 0;         // mapping length
 
     /* finish function */
     return 0;
@@ -72,7 +74,7 @@ int pcimem_verbose( t_pcimem *this, uint8_t level )
  *  pcimem_open
  *    open memory window to hardware
  */
-int pcimem_open( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset)
+int pcimem_open4( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset, uint32_t mapLen)
 {
     /** variables **/
     const uint32_t  uint32PageSize = (uint32_t) getpagesize();  // get OS page size in Bytes
@@ -110,13 +112,15 @@ int pcimem_open( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset)
 
     /*  Open Memory Window to hardware
      *  SRC: https://www.safaribooksonline.com/library/view/linux-system-programming/0596009585/ch04s03.html
-     *  map one complete page
+     *  map according length
+     *    void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
      */
-    this->voidPtrMem = mmap(0, uint32PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, this->intBarFh, uint32BarOffsetInMemPages*uint32PageSize);
+    this->uint32MapLen = mapLen;
+    this->voidPtrMem = mmap(0, this->uint32MapLen, PROT_READ | PROT_WRITE, MAP_SHARED, this->intBarFh, uint32BarOffsetInMemPages*uint32PageSize);
     if ( this->voidPtrMem == MAP_FAILED ) {
         if ( 0 != this->uint8DbgMsgLevel ) {
             printf("  ERROR:%s: Registers mapping failed\n", __FUNCTION__);
-            printf("    mmap(0, %i, PROT_READ | PROT_WRITE, MAP_SHARED, %i, %i)\n", uint32PageSize, this->intBarFh, uint32BarOffsetInMemPages*uint32PageSize);
+            printf("    mmap(0, %i, PROT_READ | PROT_WRITE, MAP_SHARED, %i, %i)\n", this->uint32MapLen, this->intBarFh, uint32BarOffsetInMemPages*uint32PageSize);
         }
         return -1;
     }
@@ -139,10 +143,6 @@ int pcimem_open( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset)
  */
 int pcimem_close( t_pcimem *this )
 {
-    /** variables **/
-    const uint32_t  uint32PageSize = (uint32_t) getpagesize();  // get OS page size in Bytes
-
-
     /* Function Call Message */
     if ( 0 != this->uint8DbgMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
 
@@ -160,14 +160,15 @@ int pcimem_close( t_pcimem *this )
     /*  unmap handle
      *  src: https://linux.die.net/man/3/munmap
      */
-    if ( 0 != munmap(this->voidPtrMem, uint32PageSize) ) {
+    if ( 0 != munmap(this->voidPtrMem, this->uint32MapLen) ) {
         if ( 0 != this->uint8DbgMsgLevel ) {
             printf("  ERROR:%s: Handle unmapping failed\n", __FUNCTION__);
-            printf("    munmap(0x%zx, %i)\n", (size_t) this->voidPtrMem, uint32PageSize);
+            printf("    munmap(0x%zx, %i)\n", (size_t) this->voidPtrMem, this->uint32MapLen);
         }
         return -1;
     }
     this->voidPtrMem = NULL;
+    this->uint32MapLen = 0;
 
     /* close file handle */
     if ( 0 != close(this->intBarFh) ) {

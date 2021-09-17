@@ -41,6 +41,7 @@ typedef struct t_pcimem {
     int                 intBarFh;               /**<  Bar File handle               */
     void*               voidPtrMem;             /**<  void pointer to mmap handle   */
     uint32_t            uint32MemPageOffset;    /**<  offset in mempage             */
+    uint32_t            uint32MapLen;           /**<  mapping length                */
 
 } t_pcimem;
 
@@ -87,13 +88,20 @@ int pcimem_verbose( t_pcimem *this, uint8_t level );
  *  @param[in,out]  this                storage element @ref t_pci_mem_rw
  *  @param[in]      linuxPciBarPath     linux system path to file which represents PCI device bar
  *  @param[in]      barOffset           bar offset
+ *  @param[in]      mapLen              bar mapping length in byte
  *  @return         int                 state
  *  @retval         0                   OK
  *  @retval         -1                  FAIL
  *  @since          Dec 03, 2020
  *  @author         Andreas Kaeberlein
+ *  @see            https://stackoverflow.com/questions/1472138/c-default-arguments
  */
-int pcimem_open( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset );
+#define pcimem_open3(...) pcimem_open4(__VA_ARGS__, (uint32_t) getpagesize())
+#define pcimem_open2(...) pcimem_open3(__VA_ARGS__, 0)
+#define pcimem_open1(...) pcimem_open2(__VA_ARGS__, "")
+#define VAR_FUNC(_1, _2, _3, _4, NAME, ...) NAME
+#define pcimem_open(...) VAR_FUNC(__VA_ARGS__, pcimem_open4, pcimem_open3, pcimem_open2, pcimem_open1)(__VA_ARGS__)
+int pcimem_open4( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset, uint32_t mapLen );
 
 
 /** @brief close memory-mapped handle
@@ -128,5 +136,4 @@ void* pcimem_ptr( t_pcimem *this );
 }
 #endif // __cplusplus
 
-#endif  // __PCI_MEM_RW_H
-
+#endif  // __PCIMEM_H

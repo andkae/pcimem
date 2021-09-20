@@ -96,12 +96,11 @@ int pcimem_verbose( t_pcimem *this, uint8_t level );
  *  @author         Andreas Kaeberlein
  *  @see            https://stackoverflow.com/questions/1472138/c-default-arguments
  */
-#define pcimem_open3(...) pcimem_open4(__VA_ARGS__, (uint32_t) getpagesize())
-#define pcimem_open2(...) pcimem_open3(__VA_ARGS__, 0)
-#define pcimem_open1(...) pcimem_open2(__VA_ARGS__, "")
+#define pcimem_open_maplen(...) pcimem_open_(__VA_ARGS__, (uint32_t) getpagesize())
+#define pcimem_open_maplen_bar(...) pcimem_open_maplen(__VA_ARGS__, 0)
 #define VAR_FUNC(_1, _2, _3, _4, NAME, ...) NAME
-#define pcimem_open(...) VAR_FUNC(__VA_ARGS__, pcimem_open4, pcimem_open3, pcimem_open2, pcimem_open1)(__VA_ARGS__)
-int pcimem_open4( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset, uint32_t mapLen );
+#define pcimem_open(...) VAR_FUNC(__VA_ARGS__, pcimem_open_, pcimem_open_maplen, pcimem_open_maplen_bar)(__VA_ARGS__)
+int pcimem_open_( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset, uint32_t mapLen );
 
 
 /** @brief close memory-mapped handle

@@ -74,7 +74,7 @@ int pcimem_verbose( t_pcimem *this, uint8_t level )
  *  pcimem_open
  *    open memory window to hardware
  */
-int pcimem_open4( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset, uint32_t mapLen)
+int pcimem_open_( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset, uint32_t mapLen)
 {
     /** variables **/
     const uint32_t  uint32PageSize = (uint32_t) getpagesize();  // get OS page size in Bytes

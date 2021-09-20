@@ -103,6 +103,10 @@ int main(int argc, char **argv)
     }
 
 
+    /* set verbose level */
+    pcimem_verbose(&pciHandle, 0);
+
+
     /* align BAR offset to acces type */
     uint32BarOfs = (uint32_t) strtoul(argv[4], 0, 0);
     switch(tolower(argv[5][0])) {

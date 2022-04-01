@@ -77,7 +77,7 @@ int main(int argc, char **argv)
         printf("                [h]alfword, 16Bit\n");
         printf("                [w]ord,     32Bit\n");
         printf("  data[:mask]  write data\n");
-        printf("                optional mask performs read-modify-write\n");
+        printf("                if mask is used, then read-modify-write\n");
         printf("\n");
         printf("Contribute:\n");
         printf("  https://code.siemens.com/linuxHWtools/pciMemRW\n");

@@ -6,13 +6,17 @@ CLI tool and library to interact with PCI interfaced registers.
 
 ## [CLI](./src/pcimem_main.c)
 ```bash
-Usage:  sudo ./bin/pcimem { vendorID } { deviceID } { bar } { offset } { type } [ data ]
-  vendorID : PCI device vendor ID
-  deviceID : PCI device device ID
-  bar      : PCI Bar of device to accessed
-  offset   : offset into pci memory region to act upon
-  type     : access operation type : [b]yte, [h]alfword, [w]ord
-  data     : data to be written, single value only
+Usage: sudo ./bin/pcimem { vendorID } { deviceID } { bar } { offset } { type } [ data[:mask] ]
+  vendorID     vendor identification of PCI device f.e. 0x110A
+  deviceID     device identification of PCI device f.e. 0x4080
+  bar          bar of targeted PCI device
+  offset       byte offset in BAR
+  type         access data width
+                [b]yte,      8Bit
+                [h]alfword, 16Bit
+                [w]ord,     32Bit
+  data[:mask]  write data
+                optional mask performs read-modify-write
 ```
 
 

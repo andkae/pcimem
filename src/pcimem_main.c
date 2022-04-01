@@ -46,6 +46,9 @@ int main(int argc, char **argv)
     char        charWriteVal[12];
     char        charReadVal[12];
     uint32_t    uint32BarOfs;
+    uint32_t    uint32WriteVal;
+    uint32_t    uint32MskVal;
+    uint32_t    uint32Temp;
 
 
 
@@ -62,18 +65,19 @@ int main(int argc, char **argv)
         // argv[0]  [1]     [2]     [3]     [4]     [5]     [6]
         printf("\n");
         printf("Usage:\n");
-        printf("  %s { vendorID } { deviceID } { bar } { offset } { type } [ data ]\n", argv[0]);
+        printf("  %s { vendorID } { deviceID } { bar } { offset } { type } [ data[:mask] ]\n", argv[0]);
         printf("\n");
         printf("Arguments:\n");
-        printf("  vendorID   vendor identification of PCI device f.e. 0x110A\n");
-        printf("  deviceID   device identification of PCI device f.e. 0x4080\n");
-        printf("  bar        bar of targeted PCI device\n");
-        printf("  offset     byte offset in BAR\n");
-        printf("  type       access data width\n");
-        printf("              [b]yte,      8Bit\n");
-        printf("              [h]alfword, 16Bit\n");
-        printf("              [w]ord,     32Bit\n");
-        printf("  data       write data\n");
+        printf("  vendorID     vendor identification of PCI device f.e. 0x110A\n");
+        printf("  deviceID     device identification of PCI device f.e. 0x4080\n");
+        printf("  bar          bar of targeted PCI device\n");
+        printf("  offset       byte offset in BAR\n");
+        printf("  type         access data width\n");
+        printf("                [b]yte,      8Bit\n");
+        printf("                [h]alfword, 16Bit\n");
+        printf("                [w]ord,     32Bit\n");
+        printf("  data[:mask]  write data\n");
+        printf("                optional mask performs read-modify-write\n");
         printf("\n");
         printf("Contribute:\n");
         printf("  https://code.siemens.com/linuxHWtools/pciMemRW\n");
@@ -150,21 +154,62 @@ int main(int argc, char **argv)
         }
     /* write access, only one written value supported */
     } else if (argc == 7) {
+        /* write or read-modify-write */
+        uint32MskVal = (uint32_t) ~0;
+        if ( NULL != strstr(argv[6], ":") ) {
+            if ( 2 != sscanf(argv[6], "%i:%i", &uint32WriteVal, &uint32MskVal) ) {
+                printf("ERROR: Illegal write data '%s'.\n", argv[6]);
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            if ( 1 != sscanf(argv[6], "%i", &uint32WriteVal) ) {
+                printf("ERROR: Illegal write data '%s'.\n", argv[6]);
+                exit(EXIT_FAILURE);
+            }
+        }
+        /* dispatch based on acces type */
         switch(tolower(argv[5][0])) {   // access type
             case 'b':
-                *((volatile uint8_t *) pcimem_ptr(&pciHandle)) = (uint8_t) strtoul(argv[6], 0, 0);  // write value
-                sprintf(charReadVal, "0x%02X", *((volatile uint8_t *) pcimem_ptr(&pciHandle)));     // read back
-                sprintf(charWriteVal, "0x%02X", (uint8_t) strtoul(argv[6], 0, 0));                  // convert write value into hexadecimal string
+                /* write */
+                uint32Temp = uint32WriteVal;
+                /* read modify write */
+                if ( (uint32_t) ~0 != uint32MskVal ) {
+                    uint32Temp = (uint32_t) *((volatile uint8_t *) pcimem_ptr(&pciHandle)); // read
+                    uint32Temp = uint32Temp & ((uint32_t) ~uint32MskVal);                   // clear all masked bits
+                    uint32Temp = uint32Temp | uint32WriteVal;                               // or set bits into again
+                }
+                *((volatile uint8_t *) pcimem_ptr(&pciHandle)) = (uint8_t) uint32Temp;  // write value
+                /* check */
+                sprintf(charReadVal, "0x%02X", *((volatile uint8_t *) pcimem_ptr(&pciHandle))); // read back
+                sprintf(charWriteVal, "0x%02X", (uint8_t) uint32Temp);                          // convert write value into hexadecimal string
                 break;
             case 'h':
-                *((volatile uint16_t *) pcimem_ptr(&pciHandle)) = (uint16_t) strtoul(argv[6], 0, 0);    // write
-                sprintf(charReadVal, "0x%04X", *((volatile uint16_t *) pcimem_ptr(&pciHandle)));        // read
-                sprintf(charWriteVal, "0x%04X", (uint16_t) strtoul(argv[6], 0, 0));                     // convert write value into hexadecimal string
+                /* write */
+                uint32Temp = uint32WriteVal;
+                /* read modify write */
+                if ( (uint32_t) ~0 != uint32MskVal ) {
+                    uint32Temp = (uint32_t) *((volatile uint16_t *) pcimem_ptr(&pciHandle));    // read
+                    uint32Temp = uint32Temp & ((uint32_t) ~uint32MskVal);                       // clear all masked bits
+                    uint32Temp = uint32Temp | uint32WriteVal;                                   // or set bits into again
+                }
+                *((volatile uint16_t *) pcimem_ptr(&pciHandle)) = (uint16_t) uint32Temp;        // write value
+                /* check */
+                sprintf(charReadVal, "0x%04X", *((volatile uint16_t *) pcimem_ptr(&pciHandle)));    // read
+                sprintf(charWriteVal, "0x%04X", (uint16_t) uint32Temp);                             // convert write value into hexadecimal string
                 break;
             case 'w':
-                *((volatile uint32_t *) pcimem_ptr(&pciHandle)) = (uint32_t) strtoul(argv[6], 0, 0);    // write
-                sprintf(charReadVal, "0x%08X", *((volatile uint32_t *) pcimem_ptr(&pciHandle)));        // read back
-                sprintf(charWriteVal, "0x%08X", (uint32_t) strtoul(argv[6], 0, 0));                     // convert write value into hexadecimal string
+                /* write */
+                uint32Temp = uint32WriteVal;
+                /* read modify write */
+                if ( (uint32_t) ~0 != uint32MskVal ) {
+                    uint32Temp = (uint32_t) *((volatile uint32_t *) pcimem_ptr(&pciHandle));    // read
+                    uint32Temp = uint32Temp & ((uint32_t) ~uint32MskVal);                       // clear all masked bits
+                    uint32Temp = uint32Temp | uint32WriteVal;                                   // or set bits into again
+                }
+                *((volatile uint32_t *) pcimem_ptr(&pciHandle)) = (uint32_t) uint32Temp;        // write value
+                /* check */
+                sprintf(charReadVal, "0x%08X", *((volatile uint32_t *) pcimem_ptr(&pciHandle)));    // read back
+                sprintf(charWriteVal, "0x%08X", (uint32_t) uint32Temp);                             // convert write value into hexadecimal string
                 break;
             default:
                 printf("ERROR: Illegal data type '%c'.\n", tolower(argv[5][0]));

@@ -1,18 +1,18 @@
 # **********************************************************************
-#  @copyright	: Siemens AG
-#  @license		: GPLv3
-#  @author		: Andreas Kaeberlein
-#  @address		: Clemens-Winkler-Strasse 3, 09116 Chemnitz
+#  @copyright   : Siemens AG
+#  @license     : GPLv3
+#  @author      : Andreas Kaeberlein
+#  @address     : Clemens-Winkler-Strasse 3, 09116 Chemnitz
 #
-#  @maintainer	: Andreas Kaeberlein
-#  @telephone	: +49 371 4810-2108
-#  @email		: andreas.kaeberlein@siemens.com
+#  @maintainer  : Andreas Kaeberlein
+#  @telephone   : +49 371 4810-2108
+#  @email       : andreas.kaeberlein@siemens.com
 #
-#  @file		: Makefile
-#  @date		: 2016-12-06
+#  @file        : Makefile
+#  @date        : 2016-12-06
 #
-#  @brief		: Build
-#				  builds sources with all dependencies
+#  @brief       : Build
+#                   builds sources with all dependencies
 # **********************************************************************
 
 
@@ -37,7 +37,7 @@ endif
 all: pcimem
 
 pcimem: pcimem.o pciinfo.o pcimem_lib.o
-	$(LINKER) ./obj/pcimem.o ./obj/pciinfo.o ./obj/pcimem_lib.o $(LFLAGS) -o ./bin/pcimem_cli
+	$(LINKER) ./obj/pcimem.o ./obj/pciinfo.o ./obj/pcimem_lib.o $(LFLAGS) -o ./bin/pcimem
 
 pcimem.o: ./src/pcimem_main.c
 	$(CC) $(CFLAGS) ./src/pcimem_main.c -o ./obj/pcimem.o

@@ -33,6 +33,9 @@ ifeq ($(origin LFLAGS), undefined)
   LFLAGS = -Wall -Wextra -Wimplicit -I. -lm
 endif
 
+INSTALL ?= install
+PREFIX ?= /usr
+
 
 all: pcimem
 
@@ -50,6 +53,12 @@ pcimem_lib.o: ./src/pcimem.c
 
 ci: ./src/pcimem.c
 	$(CC) $(CFLAGS) -Werror ./src/pcimem.c -o ./obj/pcimem_lib.o
+
+
+install: ./bin/pcimem
+	$(INSTALL) -d $(DESTDIR)$(PREFIX)/bin/
+	$(INSTALL) -m 0755 $< $(DESTDIR)$(PREFIX)/bin/
+
 
 clean:
 	rm -f ./obj/*o ./bin/pcimem

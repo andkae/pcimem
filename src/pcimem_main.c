@@ -176,7 +176,7 @@ int main(int argc, char **argv)
                 if ( (uint32_t) ~0 != uint32MskVal ) {
                     uint32Temp = (uint32_t) *((volatile uint8_t *) pcimem_ptr(&pciHandle)); // read
                     uint32Temp = uint32Temp & ((uint32_t) ~uint32MskVal);                   // clear all masked bits
-                    uint32Temp = uint32Temp | uint32WriteVal;                               // or set bits into again
+                    uint32Temp = uint32Temp | (uint32WriteVal & uint32MskVal);              // or set bits into again
                 }
                 *((volatile uint8_t *) pcimem_ptr(&pciHandle)) = (uint8_t) uint32Temp;  // write value
                 /* check */
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
                 if ( (uint32_t) ~0 != uint32MskVal ) {
                     uint32Temp = (uint32_t) *((volatile uint16_t *) pcimem_ptr(&pciHandle));    // read
                     uint32Temp = uint32Temp & ((uint32_t) ~uint32MskVal);                       // clear all masked bits
-                    uint32Temp = uint32Temp | uint32WriteVal;                                   // or set bits into again
+                    uint32Temp = uint32Temp | (uint32WriteVal & uint32MskVal);                  // or set bits into again
                 }
                 *((volatile uint16_t *) pcimem_ptr(&pciHandle)) = (uint16_t) uint32Temp;        // write value
                 /* check */

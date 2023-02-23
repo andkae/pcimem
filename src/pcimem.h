@@ -39,7 +39,7 @@ typedef struct t_pcimem {
     uint8_t             uint8DbgMsgLevel;       /**<  mesage level                  */
     uint8_t             uint8IsOpen;            /**<  handle is open                */
     int                 intBarFh;               /**<  Bar File handle               */
-    void*               voidPtrMem;             /**<  void pointer to mmap handle   */
+    volatile void*      voidPtrMem;             /**<  void pointer to mmap handle   */
     uint32_t            uint32MemPageOffset;    /**<  offset in mempage             */
     uint32_t            uint32MapLen;           /**<  mapping length                */
 
@@ -122,13 +122,13 @@ int pcimem_close( t_pcimem *this );
  *  returns memory pointer starting at offset given on open
  *
  *  @param[in,out]  this                storage element @ref t_pci_mem_rw
- *  @return         void*               state
+ *  @return         void*               pointer to requested memory location in pci address space
  *  @retval         NULL                memory handle not valid
  *  @retval         VAL                 memory window is open
  *  @since          Jul 28, 2021
  *  @author         Andreas Kaeberlein
  */
-void* pcimem_ptr( t_pcimem *this );
+volatile void* pcimem_ptr( t_pcimem *this );
 
 
 #ifdef __cplusplus

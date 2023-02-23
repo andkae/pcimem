@@ -160,7 +160,7 @@ int pcimem_close( t_pcimem *this )
     /*  unmap handle
      *  src: https://linux.die.net/man/3/munmap
      */
-    if ( 0 != munmap(this->voidPtrMem, this->uint32MapLen) ) {
+    if ( 0 != munmap( (void*) this->voidPtrMem, this->uint32MapLen) ) {
         if ( 0 != this->uint8DbgMsgLevel ) {
             printf("  ERROR:%s: Handle unmapping failed\n", __FUNCTION__);
             printf("    munmap(0x%zx, %i)\n", (size_t) this->voidPtrMem, this->uint32MapLen);
@@ -189,7 +189,7 @@ int pcimem_close( t_pcimem *this )
  *  pcimem_ptr
  *    returns memory pointer starting at offset given on open
  */
-void* pcimem_ptr( t_pcimem *this )
+volatile void* pcimem_ptr( t_pcimem *this )
 {
     /* Function Call Message */
     if ( 0 != this->uint8DbgMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
@@ -203,5 +203,5 @@ void* pcimem_ptr( t_pcimem *this )
     }
 
     /* calc pointer */
-    return ((void*) (this->voidPtrMem + this->uint32MemPageOffset));
+    return ((volatile void*) (this->voidPtrMem + this->uint32MemPageOffset));
 }

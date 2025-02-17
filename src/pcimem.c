@@ -101,6 +101,7 @@ int pcimem_open_( t_pcimem *this, char linuxPciBarPath[], uint32_t barOffset, ui
         printf("  INFO:%s:PCIMEM:  PCIBAROFFSET  = 0x%08zx\n",  __FUNCTION__, (size_t) barOffset);
         printf("  INFO:%s:PCIMEM:  MEMPAGE       = %i\n",       __FUNCTION__, uint32BarOffsetInMemPages);
         printf("  INFO:%s:PCIMEM:  MEMPAGEOFFSET = 0x%08zx\n",  __FUNCTION__, (size_t) this->uint32MemPageOffset);
+        printf("  INFO:%s:PCIMEM:  MAPLENGTH     = %i\n",       __FUNCTION__, mapLen);
     }
 
     /* Open file handle to bar */

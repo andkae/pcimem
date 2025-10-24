@@ -22,17 +22,13 @@
 /** Includes **/
 /* Standard libs */
 #include <stdio.h>      // f.e. printf
-#include <stdlib.h>     // defines four variables, several macros,
-                        // and various functions for performing
-                        // general functions
 #include <stdint.h>     // defines fixed data types, like int8_t...
-#include <unistd.h>     // system call wrapper functions such as fork, pipe and I/O primitives (read, write, close, etc.).
+#include <unistd.h>     // system call wrapper functions
+                        //   fork, pipe, read, write, close
+#include <fcntl.h>      // open()
 #include <string.h>     // string handling functions
-#include <fcntl.h>      // manipulate file descriptor
-#include <stdarg.h>     // variable parameter list
 /* System specific libs */
-#include <sys/types.h>  //
-#include <sys/mman.h>   // maps virtual to physical space
+#include <sys/mman.h>   // maps virtual to physical space, mmap(), munmap()
 /* User Libs */
 #include "pcimem.h"     // self
 

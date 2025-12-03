@@ -1,6 +1,6 @@
 /***********************************************************************
- * @copyright   Siemens AG, 2021
- * @license     GPLv3
+ * @copyright   Siemens AG, 2025
+ * @license     BSDv3
  * @author      Andreas Kaeberlein
  * @address     Clemens-Winkler-Strasse 3, 09116 Chemnitz
  *

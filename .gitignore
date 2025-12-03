@@ -1,179 +1,28 @@
-#**************************************************************
-# Copyright		: (c) All Rights Reserved
-# Company		: Siemens AG
-# Address		: Clemens-Winkler-Straße 3, 09116 Chemnitz
-# Author		: Andreas Kaeberlein
+# GCC
 #
-# File			: .gitconfig.
+/**/*.o
+/**/*.bin
+/**/*.S
+/**/*.hex
+/**/*.elf
+/**/*.asm
+/**/*.c.o
 #
-# Description	: git ignore settings
+
+
+# Executable
+/bin/**
 #
-# Dependencies	: none
+
+
+# MS Visio Code
 #
-# Sources		: none
+/build/**
+/.vscode/**
 #
-# on			: 2016-09-23
-#************************************************************************
 
 
-
-#---------------------------------------------------------------
-# general settings
-#---------------------------------------------------------------
-#
-!.gitkeep
-!.gitconfig
-#
-#---------------------------------------------------------------
-
-
-
-#---------------------------------------------------------------
-# MS Office
-#---------------------------------------------------------------
-#
-*.~vsd
-~$*.docx
-#
-#---------------------------------------------------------------
-
-
-
-#---------------------------------------------------------------
-# GCC compiler
-# SRC: https://raw.githubusercontent.com/gcc-mirror/gcc/master/.gitignore
-#---------------------------------------------------------------
-#
-*.diff
-*.patch
-*.orig
-*.rej
-
-*~
-.#*
-*#
-
-*.flt
-*.gmo
-*.info
-*.la
-*.lo
-*.o
-*.pyc
-*.tmp
-
-.deps
-.libs
-
-autom4te.cache
-config.cache
-config.h
-config.intl
-config.log
-config.status
-libtool
-POTFILES
-*-POTFILES
-
-TAGS
-TAGS.sub
-
-.local.vimrc
-.lvimrc
-
-.clang-format
-
-.gdbinit
-.gdb_history
-
-# ignore core files, but not java/net/protocol/core/
-core
-!core/
-
-lost+found
-
-# ignore ./contrib/gcc_update output
-LAST_UPDATED
-REVISION
-#
-#---------------------------------------------------------------
-
-
-
-#---------------------------------------------------------------
-# Eclipse
-# SRC: https://github.com/github/gitignore/blob/master/Global/Eclipse.gitignore
-#---------------------------------------------------------------
-#
-.metadata
-bin/
-tmp/
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
-.settings/
-.loadpath
-.recommenders
-
-# Eclipse Core
-.project
-
-# External tool builders
-.externalToolBuilders/
-
-# Locally stored "Eclipse launch configurations"
-*.launch
-
-# PyDev specific (Python IDE for Eclipse)
-*.pydevproject
-
-# CDT-specific (C/C++ Development Tooling)
-.cproject
-
-# JDT-specific (Eclipse Java Development Tools)
-.classpath
-
-# Java annotation processor (APT)
-.factorypath
-
-# PDT-specific (PHP Development Tools)
-.buildpath
-
-# sbteclipse plugin
-.target
-
-# Tern plugin
-.tern-project
-
-# TeXlipse plugin
-.texlipse
-
-# STS (Spring Tool Suite)
-.springBeans
-
-# Code Recommenders
-.recommenders/
-#
-#---------------------------------------------------------------
-
-
-
-#---------------------------------------------------------------
-# Geany
-#---------------------------------------------------------------
-#
-*.gch
-#
-#---------------------------------------------------------------
-
-
-
-#---------------------------------------------------------------
-# Doxygen genertated
-#---------------------------------------------------------------
+# Doxygen
 #
 /**/doxygen/*
 #
-#---------------------------------------------------------------

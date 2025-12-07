@@ -29,8 +29,8 @@
 #include <string.h>
 #include <ctype.h>
 /* User Libs */
-#include "../inc/pciinfo/src/pciinfo.h" // PCI device search
-#include "pcimem.h"                     // provides acces functions
+#include "pciinfo.h"	// PCI device search
+#include "pcimem.h"     // provides acces functions
 
 
 
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
         printf("                if mask is used, then read-modify-write\n");
         printf("\n");
         printf("Contribute:\n");
-        printf("  https://code.siemens.com/linuxHWtools/pciMemRW\n");
+        printf("  https://github.com/andkae/pcimem\n");
         printf("\n");
         printf("\n");
         exit(EXIT_FAILURE);

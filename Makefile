@@ -17,15 +17,25 @@
 
 
 
-# select compiler
-CC = gcc
+# set compiler
+ifeq ($(origin CC), undefined)
+	CC := gcc
+endif
 
 # set linker
-LINKER = gcc
+ifeq ($(origin LINKER), undefined)
+	LINKER := $(CC)
+endif
+
+# Get Absoulute path of this file
+#   https://stackoverflow.com/questions/18136918/how-to-get-current-relative-directory-of-your-makefile
+FILE_PATH_VARS := $(patsubst %/,%,$(dir $(realpath $(lastword $(MAKEFILE_LIST)))))
 
 # set compiler flags
 ifeq ($(origin CFLAGS), undefined)
-  CFLAGS = -c -O -Wall -Wextra -Wimplicit -Wconversion
+  CFLAGS = 	-c -O -Wall -Wextra -Wimplicit -Wconversion \
+			-I ${FILE_PATH_VARS} \
+			-I ${FILE_PATH_VARS}/inc/pciinfo
 endif
 
 # linking flags here
@@ -33,32 +43,67 @@ ifeq ($(origin LFLAGS), undefined)
   LFLAGS = -Wall -Wextra -Wimplicit -I. -lm
 endif
 
+
+# linking flags here
+ifeq ($(origin LFLAGS), undefined)
+  LFLAGS = -Wall -Wextra -Wimplicit -I. -lm
+endif
+
+
+# The Directories Source, Includes, Objects, Binary and Resources
+OBJDIR = obj
+BINDIR = bin
 INSTALL ?= install
 PREFIX ?= /usr
 
+# executable file name
+_TARGET = pcimem
 
-all: pcimem
+# obj files
+_OBJS = pcimem.o pciinfo.o pcimem_main.o
 
-pcimem: pcimem.o pciinfo.o pcimem_lib.o
-	$(LINKER) ./obj/pcimem.o ./obj/pciinfo.o ./obj/pcimem_lib.o $(LFLAGS) -o ./bin/pcimem
-
-pcimem.o: ./src/pcimem_main.c
-	$(CC) $(CFLAGS) ./src/pcimem_main.c -o ./obj/pcimem.o
-
-pciinfo.o: ./inc/pciinfo/src/pciinfo.c
-	$(CC) $(CFLAGS) ./inc/pciinfo/src/pciinfo.c -o ./obj/pciinfo.o
-
-pcimem_lib.o: ./src/pcimem.c
-	$(CC) $(CFLAGS) ./src/pcimem.c -o ./obj/pcimem_lib.o
-
-ci: ./src/pcimem.c
-	$(CC) $(CFLAGS) -Werror ./src/pcimem.c -o ./obj/pcimem_lib.o
+# build paths to object and executabel
+OBJS = $(addprefix $(OBJDIR)/, $(_OBJS))
+TARGET = $(addprefix $(BINDIR)/, $(_TARGET))
 
 
-install: ./bin/pcimem
+# compile
+all: $(TARGET)
+
+
+# Link
+$(TARGET):  $(OBJS)
+	@ mkdir -p $(BINDIR)
+	$(LINKER) $(OBJS) $(LFLAGS) -o $(TARGET)
+
+
+# Compile sources
+#   '.' 
+$(OBJDIR)/%.o: %.c %.h
+	@ mkdir -p $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+#   'inc/*/src' 
+$(OBJDIR)/%.o: inc/*/src/%.c inc/*/src/*.h
+	@ mkdir -p $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+#   'inc/*/' 
+$(OBJDIR)/%.o: inc/*/%.c inc/*/%.h
+	@mkdir -p $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+#   './src/*'
+$(OBJDIR)/%.o: src/%.c src/*.h
+	@ mkdir -p $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+
+install: $(TARGET)
+	@echo "Installing $(TARGET) to $(DESTDIR)$(PREFIX)/bin/"
 	$(INSTALL) -d $(DESTDIR)$(PREFIX)/bin/
 	$(INSTALL) -m 0755 $< $(DESTDIR)$(PREFIX)/bin/
 
 
 clean:
-	rm -f ./obj/*o ./bin/pcimem
+	rm -f $(OBJDIR)/*o $(BINDIR)/$(TARGET)

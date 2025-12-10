@@ -37,12 +37,12 @@
  *  @author Andreas Kaeberlein
  */
 typedef struct t_pcimem {
-    int                 intMsgLevel;            /**<  mesage level                  */
-    uint8_t             uint8IsOpen;            /**<  handle is open                */
-    int                 intBarFh;               /**<  Bar File handle               */
-    volatile void*      voidPtrMem;             /**<  void pointer to mmap handle   */
-    uint32_t            uint32MemPageOffset;    /**<  offset in mempage             */
-    uint32_t            uint32MapLen;           /**<  mapping length                */
+    int             intMsgLevel;        /**< mesage level */
+    uint8_t         uint8IsOpen;        /**< handle is open */
+    int             intBarFh;           /**< Bar File handle */
+    volatile void*  voidPtrMem;         /**< void pointer to mmap handle */
+    size_t          sizeMemPageOffset;  /**< offset in mempage */
+    size_t          sizeMapLen;         /**< mapping length */
 
 } t_pcimem;
 
@@ -65,7 +65,7 @@ extern "C"
  *  @since          Dec 03, 2020
  *  @author         Andreas Kaeberlein
  */
-int pcimem_init( t_pcimem *self );
+int pcimem_init (t_pcimem *self);
 
 
 /** @brief set verbose
@@ -78,7 +78,7 @@ int pcimem_init( t_pcimem *self );
  *  @since          Dec 03, 2020
  *  @author         Andreas Kaeberlein
  */
-void pcimem_verbose( t_pcimem *self, int level );
+void pcimem_verbose (t_pcimem *self, int level);
 
 
 /** @brief open memory-mapped handle
@@ -100,7 +100,7 @@ void pcimem_verbose( t_pcimem *self, int level );
 #define pcimem_open_maplen_bar(...) pcimem_open_maplen(__VA_ARGS__, 0)
 #define VAR_FUNC(_1, _2, _3, _4, NAME, ...) NAME
 #define pcimem_open(...) VAR_FUNC(__VA_ARGS__, pcimem_open_, pcimem_open_maplen, pcimem_open_maplen_bar)(__VA_ARGS__)
-int pcimem_open_( t_pcimem *self, char linuxPciBarPath[], uint32_t barOffset, uint32_t mapLen );
+int pcimem_open_ (t_pcimem *self, char linuxPciBarPath[], size_t barOffset, size_t mapLen);
 
 
 /** @brief close memory-mapped handle
@@ -114,7 +114,7 @@ int pcimem_open_( t_pcimem *self, char linuxPciBarPath[], uint32_t barOffset, ui
  *  @since          Dec 03, 2020
  *  @author         Andreas Kaeberlein
  */
-int pcimem_close( t_pcimem *self );
+int pcimem_close (t_pcimem *self);
 
 
 /** @brief memory pointer
@@ -128,7 +128,7 @@ int pcimem_close( t_pcimem *self );
  *  @since          Jul 28, 2021
  *  @author         Andreas Kaeberlein
  */
-volatile void* pcimem_ptr( t_pcimem *self );
+volatile void* pcimem_ptr (t_pcimem *self);
 
 
 #ifdef __cplusplus

@@ -37,7 +37,7 @@
  *  @author Andreas Kaeberlein
  */
 typedef struct t_pcimem {
-    uint8_t             uint8DbgMsgLevel;       /**<  mesage level                  */
+    int                 intMsgLevel;            /**<  mesage level                  */
     uint8_t             uint8IsOpen;            /**<  handle is open                */
     int                 intBarFh;               /**<  Bar File handle               */
     volatile void*      voidPtrMem;             /**<  void pointer to mmap handle   */
@@ -74,12 +74,11 @@ int pcimem_init( t_pcimem *self );
  *
  *  @param[in,out]  self                storage element @ref t_pci_mem_rw
  *  @param[in]      level               new verbose level
- *  @return         int                 state
- *  @retval         0                   OK
+ *  @return         void
  *  @since          Dec 03, 2020
  *  @author         Andreas Kaeberlein
  */
-int pcimem_verbose( t_pcimem *self, uint8_t level );
+void pcimem_verbose( t_pcimem *self, int level );
 
 
 /** @brief open memory-mapped handle

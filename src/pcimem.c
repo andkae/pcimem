@@ -42,7 +42,7 @@
 int pcimem_init( t_pcimem *self )
 {
     /* init variable */
-    self->uint8DbgMsgLevel = 0;     // mesage level, disabled
+    self->intMsgLevel = 0;          // mesage level, disabled
     self->uint8IsOpen = 0;          // handle is open, closed
     self->intBarFh = -1;            // Bar File handle, invalid
     self->voidPtrMem = NULL;        // void pointer to mmap handle
@@ -59,10 +59,9 @@ int pcimem_init( t_pcimem *self )
  *  pcimem_verbose
  *    set verbose level
  */
-int pcimem_verbose( t_pcimem *self, uint8_t level )
+void pcimem_verbose( t_pcimem *self, int level )
 {
-    self->uint8DbgMsgLevel = level; // set message level
-    return 0;                       // return function
+    self->intMsgLevel = level;  // set message level
 }
 
 
@@ -79,11 +78,11 @@ int pcimem_open_( t_pcimem *self, char linuxPciBarPath[], uint32_t barOffset, ui
 
 
     /* Function Call Message */
-    if ( 0 != self->uint8DbgMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
+    if ( 0 != self->intMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
 
     /* check for empty path */
     if ( 0 == strlen(linuxPciBarPath) ) {
-        if ( self->uint8DbgMsgLevel != 0 ) {
+        if ( 0 != self->intMsgLevel ) {
             printf("  ERROR:%s: Empty PCI path provided\n", __FUNCTION__);
         }
         return -1;
@@ -92,7 +91,7 @@ int pcimem_open_( t_pcimem *self, char linuxPciBarPath[], uint32_t barOffset, ui
     /* calculate Page of PCI space, and offset in Page */
     uint32BarOffsetInMemPages   = barOffset / uint32PageSize;                           // 32Bit address, get in multiple of page sizes
     self->uint32MemPageOffset   = barOffset - uint32BarOffsetInMemPages*uint32PageSize; // get offset in mempage
-    if ( 0 != self->uint8DbgMsgLevel ) {                                                // debug output
+    if ( 0 != self->intMsgLevel ) {                                                     // debug output
         printf("  INFO:%s:LINUX:   BARPATH       = %s\n",       __FUNCTION__, linuxPciBarPath);
         printf("  INFO:%s:LINUX:   PAGESIZE      = %i\n",       __FUNCTION__, uint32PageSize);
         printf("  INFO:%s:LINUX:   MAPLENGTH     = %i\n",       __FUNCTION__, mapLen);
@@ -104,7 +103,7 @@ int pcimem_open_( t_pcimem *self, char linuxPciBarPath[], uint32_t barOffset, ui
     /* Open file handle to bar */
     self->intBarFh = open(linuxPciBarPath, O_RDWR | O_SYNC);
     if ( self->intBarFh == -1 ) {
-        if ( self->uint8DbgMsgLevel != 0 ) { printf("  ERROR:%s: Failed open BAR as file handle\n", __FUNCTION__); };
+        if ( self->intMsgLevel != 0 ) { printf("  ERROR:%s: Failed open BAR as file handle\n", __FUNCTION__); };
         return -1;
     }
 
@@ -116,13 +115,13 @@ int pcimem_open_( t_pcimem *self, char linuxPciBarPath[], uint32_t barOffset, ui
     self->uint32MapLen = mapLen;
     self->voidPtrMem = mmap(0, self->uint32MapLen, PROT_READ | PROT_WRITE, MAP_SHARED, self->intBarFh, uint32BarOffsetInMemPages*uint32PageSize);
     if ( self->voidPtrMem == MAP_FAILED ) {
-        if ( 0 != self->uint8DbgMsgLevel ) {
+        if ( 0 != self->intMsgLevel ) {
             printf("  ERROR:%s: Registers mapping failed\n", __FUNCTION__);
             printf("    mmap(0, %i, PROT_READ | PROT_WRITE, MAP_SHARED, %i, %i)\n", self->uint32MapLen, self->intBarFh, uint32BarOffsetInMemPages*uint32PageSize);
         }
         return -1;
     }
-    if ( 0 != self->uint8DbgMsgLevel ) {
+    if ( 0 != self->intMsgLevel ) {
         printf("  INFO:%s:LINUX:   PHYSICAL      = %p\n", __FUNCTION__, (void*) self->voidPtrMem);
     }
 
@@ -142,11 +141,11 @@ int pcimem_open_( t_pcimem *self, char linuxPciBarPath[], uint32_t barOffset, ui
 int pcimem_close( t_pcimem *self )
 {
     /* Function Call Message */
-    if ( 0 != self->uint8DbgMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
+    if ( 0 != self->intMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
 
     /* check if handle is open */
     if ( 0 == self->uint8IsOpen ) {
-        if ( 0 != self->uint8DbgMsgLevel ) {
+        if ( 0 != self->intMsgLevel ) {
             printf("  ERROR:%s: handle not open\n", __FUNCTION__);
         }
         return -1;
@@ -159,7 +158,7 @@ int pcimem_close( t_pcimem *self )
      *  src: https://linux.die.net/man/3/munmap
      */
     if ( 0 != munmap( (void*) self->voidPtrMem, self->uint32MapLen) ) {
-        if ( 0 != self->uint8DbgMsgLevel ) {
+        if ( 0 != self->intMsgLevel ) {
             printf("  ERROR:%s: Handle unmapping failed\n", __FUNCTION__);
             printf("    munmap(0x%zx, %i)\n", (size_t) self->voidPtrMem, self->uint32MapLen);
         }
@@ -170,7 +169,7 @@ int pcimem_close( t_pcimem *self )
 
     /* close file handle */
     if ( 0 != close(self->intBarFh) ) {
-        if ( 0 != self->uint8DbgMsgLevel ) {
+        if ( 0 != self->intMsgLevel ) {
             printf("  ERROR:%s: close file handle\n", __FUNCTION__);
         }
         return -1;
@@ -190,11 +189,11 @@ int pcimem_close( t_pcimem *self )
 volatile void* pcimem_ptr( t_pcimem *self )
 {
     /* Function Call Message */
-    if ( 0 != self->uint8DbgMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
+    if ( 0 != self->intMsgLevel ) { printf("__FUNCTION__ = %s\n", __FUNCTION__); };
 
     /* handle open */
     if ( 0 == self->uint8IsOpen ) {
-        if ( 0 != self->uint8DbgMsgLevel ) {
+        if ( 0 != self->intMsgLevel ) {
             printf("  ERROR:%s: handle not open\n", __FUNCTION__);
         }
         return NULL;

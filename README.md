@@ -1,6 +1,4 @@
-[![Build](https://code.siemens.com/linuxHWtools/pciMemRW/badges/master/pipeline.svg "Build")](https://code.siemens.com/linuxHWtools/pciMemRW/pipelines)
-
-# pciMemRW
+# pcimem
 CLI tool and library to interact with PCI interfaced registers.
 
 

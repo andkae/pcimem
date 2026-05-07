@@ -33,7 +33,7 @@ FILE_PATH_VARS := $(patsubst %/,%,$(dir $(realpath $(lastword $(MAKEFILE_LIST)))
 
 # set compiler flags
 ifeq ($(origin CFLAGS), undefined)
-  CFLAGS = 	-c -O -Wall -Wextra -Wimplicit -Wconversion \
+  CFLAGS = 	-c -O -Wall -Wextra -Wimplicit -Wpadded -Wconversion \
 			-I ${FILE_PATH_VARS} \
 			-I ${FILE_PATH_VARS}/inc/pciinfo
 endif

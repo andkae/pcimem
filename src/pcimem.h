@@ -37,13 +37,13 @@
  *  @author Andreas Kaeberlein
  */
 typedef struct t_pcimem {
-    int             intMsgLevel;        /**< mesage level */
-    uint8_t         uint8IsOpen;        /**< handle is open */
-    int             intBarFh;           /**< Bar File handle */
     volatile void*  voidPtrMem;         /**< void pointer to mmap handle */
     size_t          sizeMemPageOffset;  /**< offset in mempage */
     size_t          sizeMapLen;         /**< mapping length */
-
+    int             intMsgLevel;        /**< mesage level */
+    int             intBarFh;           /**< Bar File handle */
+    uint8_t         uint8IsOpen;        /**< handle is open */
+    uint8_t         _uint8padding[7];   /**< allign to 64bit machine */
 } t_pcimem;
 
 

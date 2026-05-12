@@ -44,12 +44,6 @@ ifeq ($(origin LFLAGS), undefined)
 endif
 
 
-# linking flags here
-ifeq ($(origin LFLAGS), undefined)
-  LFLAGS = -Wall -Wextra -Wimplicit -I. -lm
-endif
-
-
 # The Directories Source, Includes, Objects, Binary and Resources
 OBJDIR = obj
 BINDIR = bin
